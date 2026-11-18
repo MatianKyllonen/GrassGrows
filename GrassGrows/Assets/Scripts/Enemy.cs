@@ -1,0 +1,74 @@
+using UnityEngine;
+using System.Collections;
+using UnityEngine.Events;
+
+public class Enemy : MonoBehaviour, IDamageable
+{
+    public int maxHealth = 1;
+    public UnityEvent onHit;
+    public UnityEvent onDeath;
+
+    private int health;
+    private SpriteRenderer spriteRenderer;
+
+    public float hitFlashDuration = 0.1f;
+    private MaterialPropertyBlock propertyBlock;
+    private Coroutine flashCoroutine;
+
+    private void Awake()
+    {
+        health = maxHealth;
+
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+
+        propertyBlock = new MaterialPropertyBlock();
+    }
+
+    public void Hit(Vector2 from, int damage)
+    {
+        if (health <= 0) return;
+
+        health -= damage;
+
+        onHit?.Invoke();
+
+        if (spriteRenderer != null)
+        {
+            if (flashCoroutine != null)
+                StopCoroutine(flashCoroutine);
+
+            flashCoroutine = StartCoroutine(HitFlash());
+        }
+
+        if (health <= 0)
+            Die();
+    }
+
+    private IEnumerator HitFlash()
+    {
+        float elapsed = 0f;
+
+        while (elapsed < hitFlashDuration)
+        {
+            float amount = 1f - (elapsed / hitFlashDuration);
+
+            spriteRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat("_FlashAmount", amount);
+            spriteRenderer.SetPropertyBlock(propertyBlock);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        propertyBlock.SetFloat("_FlashAmount", 0f);
+        spriteRenderer.SetPropertyBlock(propertyBlock);
+
+        flashCoroutine = null;
+    }
+
+    private void Die()
+    {
+        onDeath?.Invoke();
+        Destroy(gameObject);   // swap for a death animation later
+    }
+}

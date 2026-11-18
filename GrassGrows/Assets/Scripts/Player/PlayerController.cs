@@ -1,59 +1,46 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(Rigidbody2D))]
+public interface IDamageable { void Hit(Vector2 from, int damage); }
+
 public class PlayerController : MonoBehaviour
 {
-    [Header("Movement")]
-    public float moveSpeed = 8f;
-    [Tooltip("How fast the player speeds up (units/sec²)")]
-    public float acceleration = 60f;
-    [Tooltip("How fast the player slows down when no input is held (units/sec²)")]
-    public float deceleration = 80f;
+    public BoardGrid board;
+    public LayerMask enemyMask;
+
+    [Header("Step")]
+    public float stepTime = 0.10f;
+    public float stepCooldown = 0.03f;
 
     [Header("Dash")]
-    public float dashSpeed = 24f;
-    public float dashDuration = 0.15f;
-    public float dashCooldown = 0.6f;
+    public int dashDistance = 2;
+    public float dashTime = 0.12f;
+    public float dashCooldown = 0.5f;
+    [Tooltip("Dash pressed slightly early still counts")]
+    public float dashBuffer = 0.15f;
+    public int dashDamage = 1;
 
-    private Rigidbody2D rb;
-    private InputAction moveAction;
-    private InputAction dashAction;
+    private InputAction moveAction, dashAction;
+    private Vector2Int inputDir;
+    private Vector2Int lastDir = Vector2Int.down;
+    private float dashBufferLeft, dashCooldownLeft, stepCooldownLeft;
+    private bool isMoving;
 
-    private Vector2 moveInput;
-    private Vector2 lastDirection = Vector2.down;
-
-    private bool dashRequested;
-    private bool isDashing;
-    private float dashTimeLeft;
-    private float dashCooldownLeft;
-    private Vector2 dashDirection;
-
-    public bool IsDashing => isDashing;
+    public Vector2Int Cell { get; private set; }
+    public bool IsDashing { get; private set; }
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.freezeRotation = true;
-        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-
-        // Movement: WASD, arrow keys, gamepad left stick
         moveAction = new InputAction("Move", InputActionType.Value);
         moveAction.AddCompositeBinding("2DVector")
-            .With("Up", "<Keyboard>/w")
-            .With("Down", "<Keyboard>/s")
-            .With("Left", "<Keyboard>/a")
-            .With("Right", "<Keyboard>/d");
+            .With("Up", "<Keyboard>/w").With("Down", "<Keyboard>/s")
+            .With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
         moveAction.AddCompositeBinding("2DVector")
-            .With("Up", "<Keyboard>/upArrow")
-            .With("Down", "<Keyboard>/downArrow")
-            .With("Left", "<Keyboard>/leftArrow")
-            .With("Right", "<Keyboard>/rightArrow");
+            .With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow")
+            .With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
         moveAction.AddBinding("<Gamepad>/leftStick");
 
-        // Dash: Space, gamepad south button (A / Cross)
         dashAction = new InputAction("Dash", InputActionType.Button);
         dashAction.AddBinding("<Keyboard>/space");
         dashAction.AddBinding("<Gamepad>/buttonSouth");
@@ -61,72 +48,134 @@ public class PlayerController : MonoBehaviour
 
     private void OnEnable()
     {
-        moveAction.Enable();
-        dashAction.Enable();
-        dashAction.performed += OnDashPerformed;
+        moveAction.Enable(); dashAction.Enable();
+        dashAction.performed += OnDash;
     }
 
     private void OnDisable()
     {
-        dashAction.performed -= OnDashPerformed;
-        moveAction.Disable();
-        dashAction.Disable();
+        dashAction.performed -= OnDash;
+        moveAction.Disable(); dashAction.Disable();
     }
 
-    private void OnDashPerformed(InputAction.CallbackContext ctx)
+    private void OnDash(InputAction.CallbackContext _) => dashBufferLeft = dashBuffer;
+
+    private void Start()
     {
-        dashRequested = true;
+        Cell = board.WorldToCell(transform.position);
+        transform.position = board.CellToWorld(Cell, transform.position.z);
     }
 
-    private void Update()
-    {
-        moveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
+private void Update()
+{
+    dashCooldownLeft -= Time.deltaTime;
+    stepCooldownLeft -= Time.deltaTime;
+    dashBufferLeft -= Time.deltaTime;
 
-        if (moveInput.sqrMagnitude > 0.01f)
-            lastDirection = moveInput.normalized;
+    // Read movement input.
+    Vector2 raw = moveAction.ReadValue<Vector2>();
+
+    // Allow horizontal OR vertical movement, never diagonal.
+    if (Mathf.Abs(raw.x) > Mathf.Abs(raw.y))
+    {
+        inputDir = Mathf.Abs(raw.x) > 0.5f
+            ? new Vector2Int((int)Mathf.Sign(raw.x), 0)
+            : Vector2Int.zero;
+    }
+    else
+    {
+        inputDir = Mathf.Abs(raw.y) > 0.5f
+            ? new Vector2Int(0, (int)Mathf.Sign(raw.y))
+            : Vector2Int.zero;
     }
 
-    private void FixedUpdate()
+    // Remember the last direction for dashing.
+    if (inputDir != Vector2Int.zero)
+        lastDir = inputDir;
+
+    // Don't interrupt an ongoing movement.
+    if (isMoving)
+        return;
+
+    // Dash takes priority over normal movement.
+    if (dashBufferLeft > 0f && dashCooldownLeft <= 0f)
     {
-        float dt = Time.fixedDeltaTime;
-        dashCooldownLeft -= dt;
-
-        // Start a dash if requested
-        if (dashRequested)
-        {
-            dashRequested = false;
-            if (!isDashing && dashCooldownLeft <= 0f)
-                StartDash();
-        }
-
-        // Dashing overrides normal movement
-        if (isDashing)
-        {
-            rb.linearVelocity = dashDirection * dashSpeed;
-            dashTimeLeft -= dt;
-            if (dashTimeLeft <= 0f)
-                EndDash();
+        if (TryDash())
             return;
+    }
+
+    // Normal movement.
+    if (inputDir != Vector2Int.zero && stepCooldownLeft <= 0f)
+    {
+        TryStep(inputDir);
+    }
+}
+
+    private void TryStep(Vector2Int dir)
+    {
+        Vector2Int target = Cell + dir;
+        if (board.IsBlocked(target)) return;
+        StartCoroutine(MoveTo(target, stepTime, false));
+    }
+
+    private bool TryDash()
+    {
+        Vector2Int dir = inputDir != Vector2Int.zero ? inputDir : lastDir;
+
+        // Go as far as possible up to dashDistance; cancel if even 1 square is blocked
+        int n = 0;
+        for (int i = 1; i <= dashDistance; i++)
+        {
+            if (board.IsBlocked(Cell + dir * i)) break;
+            n = i;
+        }
+        if (n == 0) return false;
+
+        dashBufferLeft = 0f;
+        dashCooldownLeft = dashCooldown;
+        StartCoroutine(MoveTo(Cell + dir * n, dashTime, true));
+        return true;
+    }
+
+    private IEnumerator MoveTo(Vector2Int target, float duration, bool dash)
+    {
+        isMoving = true;
+        IsDashing = dash;
+
+        Vector3 start = transform.position;
+        Vector3 end = board.CellToWorld(target, start.z);
+        Cell = target;   // logical position updates immediately so enemies see it
+
+        if (dash) Slash(start, end);
+
+        for (float t = 0f; t < 1f; t += Time.deltaTime / duration)
+        {
+            float e = dash ? 1f - (1f - t) * (1f - t)   // ease-out: snappy burst
+                           : t * t * (3f - 2f * t);     // smoothstep
+            transform.position = Vector3.Lerp(start, end, e);
+            yield return null;
         }
 
-        // Smooth movement
-        Vector2 targetVelocity = moveInput * moveSpeed;
-        float rate = moveInput.sqrMagnitude > 0.01f ? acceleration : deceleration;
-        rb.linearVelocity = Vector2.MoveTowards(rb.linearVelocity, targetVelocity, rate * dt);
+        transform.position = end;
+        IsDashing = false;
+        isMoving = false;
+        stepCooldownLeft = stepCooldown;
     }
 
-    private void StartDash()
+    // Moving through enemies cuts them down
+    private void Slash(Vector3 a, Vector3 b)
     {
-        isDashing = true;
-        dashTimeLeft = dashDuration;
-        dashCooldownLeft = dashCooldown;
-        dashDirection = moveInput.sqrMagnitude > 0.01f ? moveInput.normalized : lastDirection;
+        float radius = board.cellSize * 0.4f;
+        var hits = Physics2D.CircleCastAll(a, radius, (b - a).normalized,
+                                           Vector3.Distance(a, b), enemyMask);
+        foreach (var h in hits)
+            if (h.collider.TryGetComponent<IDamageable>(out var d)) d.Hit(a, dashDamage);
     }
 
-    private void EndDash()
+    // Enemies call this. Dash gives brief invulnerability.
+    public void TakeHit()
     {
-        isDashing = false;
-        // Drop back to run speed so the exit blends into normal movement
-        rb.linearVelocity = dashDirection * moveSpeed;
+        if (IsDashing) return;
+        Debug.Log("Player hit!");   // hook up health here
     }
 }
