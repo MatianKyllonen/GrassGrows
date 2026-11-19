@@ -12,6 +12,9 @@ public class RookMovement : EnemyMovement
     private SpriteRenderer sr;
     private Color baseColor;
 
+    private static readonly Vector2Int[] Dirs =
+        { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down };
+
     protected override void Start()
     {
         sr = GetComponentInChildren<SpriteRenderer>();
@@ -24,6 +27,7 @@ public class RookMovement : EnemyMovement
         while (true)
         {
             yield return new WaitForSeconds(rest);
+            if (player.IsDead) yield break;
 
             Vector2Int dir = PickDirection();
             if (dir == Vector2Int.zero) continue;   // boxed in, try again later
@@ -42,17 +46,21 @@ public class RookMovement : EnemyMovement
         }
     }
 
-    // Rooks charge forward, up or down. If the player is lined up, they go for it.
+    // Charge straight at the player if lined up, otherwise close the distance
     private Vector2Int PickDirection()
     {
-        var options = new List<Vector2Int>();
-        foreach (var d in new[] { forward, Side, -Side })
+        var closing = new List<Vector2Int>();
+        foreach (var d in Dirs)
         {
             if (!CanEnter(cell + d)) continue;
+
             for (int i = 1; i <= range; i++)
                 if (cell + d * i == player.Cell) return d;   // player in line
-            options.Add(d);
+
+            // Does this direction bring us closer?
+            if ((player.Cell - cell).x * d.x > 0 || (player.Cell - cell).y * d.y > 0)
+                closing.Add(d);
         }
-        return options.Count > 0 ? options[Random.Range(0, options.Count)] : Vector2Int.zero;
+        return closing.Count > 0 ? closing[Random.Range(0, closing.Count)] : Vector2Int.zero;
     }
 }

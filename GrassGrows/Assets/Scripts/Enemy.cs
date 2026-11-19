@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.Events;
+using Unity.Mathematics;
 
 public class Enemy : MonoBehaviour, IDamageable
 {
@@ -14,6 +15,9 @@ public class Enemy : MonoBehaviour, IDamageable
     public float hitFlashDuration = 0.1f;
     private MaterialPropertyBlock propertyBlock;
     private Coroutine flashCoroutine;
+
+    public GameObject boomEffect;
+
 
     private void Awake()
     {
@@ -68,6 +72,8 @@ public class Enemy : MonoBehaviour, IDamageable
 
     private void Die()
     {
+        GameObject boom = Instantiate(boomEffect, transform.position, quaternion.identity);
+        Destroy(boom, 2);
         onDeath?.Invoke();
         Destroy(gameObject);   // swap for a death animation later
     }

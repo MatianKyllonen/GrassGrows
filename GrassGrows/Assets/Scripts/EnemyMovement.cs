@@ -5,8 +5,19 @@ public abstract class EnemyMovement : MonoBehaviour
 {
     public BoardGrid board;
     public PlayerController player;
-    public LayerMask enemyMask;                       // so enemies don't stack
-    public Vector2Int forward = Vector2Int.left;      // enemies come from the right
+    public LayerMask enemyMask;
+    public Animator root;
+
+    [HideInInspector] public Vector2Int forward = Vector2Int.left;   // recalculated toward the player
+
+    // Axis direction toward the player (the longer axis wins)
+    protected Vector2Int DirToPlayer()
+    {
+        Vector2Int d = player.Cell - cell;
+        if (d == Vector2Int.zero) return forward;
+        if (Mathf.Abs(d.x) >= Mathf.Abs(d.y)) return new Vector2Int((int)Mathf.Sign(d.x), 0);
+        return new Vector2Int(0, (int)Mathf.Sign(d.y));
+    }
 
     protected Vector2Int cell;
 
@@ -38,11 +49,13 @@ public abstract class EnemyMovement : MonoBehaviour
         Vector3 start = transform.position;
         Vector3 end = board.CellToWorld(target, start.z);
         cell = target;
+        root.SetTrigger("Hop");
         for (float t = 0f; t < 1f; t += Time.deltaTime / duration)
         {
             transform.position = Vector3.Lerp(start, end, t);
             yield return null;
         }
+        root.SetTrigger("HopEnd");
         transform.position = end;
     }
 }
