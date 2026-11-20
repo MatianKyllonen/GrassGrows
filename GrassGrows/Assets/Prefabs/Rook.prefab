@@ -128,13 +128,12 @@ MonoBehaviour:
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
-  forward: {x: -1, y: 0}
   root: {fileID: 6391278837111131097}
-  baseDamage: 1
-  range: 6
-  rest: 1.4
-  windup: 0.6
-  cellTime: 0.05
+  forward: {x: -1, y: 0}
+  range: 5
+  rest: 2
+  windup: 1
+  cellTime: 0.3
 --- !u!61 &3101173720227060465
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -264,7 +263,7 @@ SpriteRenderer:
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: e9d8fb1a6373a67498c5484b2a091532, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 1
+  m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 1, y: 1}

@@ -8,6 +8,8 @@ public abstract class EnemyMovement : MonoBehaviour
     public LayerMask enemyMask;
     public Animator root;
 
+    protected SpriteRenderer sprite;
+
     [HideInInspector] public Vector2Int forward = Vector2Int.left;   // recalculated toward the player
 
     // Axis direction toward the player (the longer axis wins)
@@ -28,6 +30,7 @@ public abstract class EnemyMovement : MonoBehaviour
     {
         board = GameManager.instance.board;
         player = GameManager.instance.player;
+        sprite = GetComponentInChildren<SpriteRenderer>();
 
         cell = board.WorldToCell(transform.position);
         transform.position = board.CellToWorld(cell, transform.position.z);
@@ -44,8 +47,20 @@ public abstract class EnemyMovement : MonoBehaviour
         return true;
     }
 
+    protected void FacePlayer()
+    {
+        if (!sprite) return;
+
+        Vector2Int direction = player.Cell - cell;
+
+        if (direction.x != 0)
+            sprite.flipX = direction.x < 0;
+    }
+
     protected IEnumerator Move(Vector2Int target, float duration)
     {
+        FacePlayer();
+
         Vector3 start = transform.position;
         Vector3 end = board.CellToWorld(target, start.z);
         cell = target;

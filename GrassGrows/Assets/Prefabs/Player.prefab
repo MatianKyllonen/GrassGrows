@@ -53,7 +53,7 @@ MonoBehaviour:
     m_Bits: 128
   stepTime: 0.3
   stepCooldown: 0.09
-  dashChargeTime: 0.5
+  dashChargeTime: 1
   canMoveWhileCharging: 0
   chargeColor: {r: 0.7607844, g: 0.44705886, b: 0.5176471, a: 1}
   readyColor: {r: 1, g: 1, b: 1, a: 1}

@@ -2348,8 +2348,11 @@ MonoBehaviour:
     weight: 1
     unlockTime: 0
   - prefab: {fileID: 5471314403311646601, guid: 22b53151827105d4298bb0253a9c5634, type: 3}
-    weight: 3
+    weight: 5
     unlockTime: 30
+  - prefab: {fileID: 5471314403311646601, guid: 53627865ad141954fb35925525d54722, type: 3}
+    weight: 3
+    unlockTime: 15
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
@@ -2358,7 +2361,6 @@ MonoBehaviour:
   minInterval: 0.7
   rampTime: 120
   maxAlive: 12
-  spawnOutsideBoard: 1
 --- !u!1 &139727710
 GameObject:
   m_ObjectHideFlags: 0
