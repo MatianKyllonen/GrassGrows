@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   maxHealth: 2
+  xpValue: 10
   onHit:
     m_PersistentCalls:
       m_Calls: []
@@ -56,6 +57,7 @@ MonoBehaviour:
       m_Calls: []
   hitFlashDuration: 0.1
   boomEffect: {fileID: 4070262559041053841, guid: 2f7a0823585f88747a334fca287d595e, type: 3}
+  hurtSFX: {fileID: 8300000, guid: f345a1aa3dbdda64f92d52cf7fd3bf6c, type: 3}
 --- !u!114 &5196217879019872428
 MonoBehaviour:
   m_ObjectHideFlags: 0

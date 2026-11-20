@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     public float dashCooldown = 0.5f;
     public int dashDamage = 1;
     public event System.Action<Vector2Int, Vector2Int> onDashed;   // fromCell, toCell
+    private int lastChargeTick;
 
     public float ChargeProgress =>
         Mathf.Clamp01(chargeHeld / dashChargeTime);
@@ -70,6 +71,11 @@ public class PlayerController : MonoBehaviour
     public SpriteRenderer sprite;
     public Animator root;
     public Animator playerAnimator;
+
+    [Header("Audi")]
+    public AudioClip dashTickSFX;
+    public AudioClip dashSlashSFX;
+    public AudioClip slashSFX;
 
     // ---------- Public state ----------
 
@@ -253,7 +259,7 @@ public class PlayerController : MonoBehaviour
         {
             isCharging = true;
             chargeHeld = 0f;
-
+            lastChargeTick = 0;
             playerAnimator.SetBool("Charging", true);
         }
 
@@ -263,6 +269,7 @@ public class PlayerController : MonoBehaviour
             {
                 chargeHeld += Time.deltaTime;
                 UpdateChargeVisual();
+                UpdateChargeTicks();
             }
             else
             {
@@ -296,6 +303,8 @@ public class PlayerController : MonoBehaviour
     private IEnumerator Attack()
     {
         isAttacking = true;
+
+        AudioManager.Instance.PlaySound(slashSFX, 0.5f);
 
         Vector2Int dir = new Vector2Int(facingX, 0);   // horizontal only
         Vector2Int target = Cell + dir;
@@ -417,6 +426,21 @@ public class PlayerController : MonoBehaviour
         playerAnimator.SetBool("Charging", false);
     }
 
+    private void UpdateChargeTicks()
+    {
+        int tick = Mathf.FloorToInt(ChargeProgress * 3f);
+
+        tick = Mathf.Min(tick, 3);
+
+        if (tick > lastChargeTick)
+        {
+            lastChargeTick = tick;
+
+            if (dashTickSFX)
+                AudioManager.Instance.PlaySound(dashTickSFX, 0.5f);
+        }
+    }
+
     // ---------- Movement ----------
 
     private void TryStep(Vector2Int dir)
@@ -455,9 +479,9 @@ public class PlayerController : MonoBehaviour
 
         dashCooldownLeft = dashCooldown;
 
-        StartCoroutine(
-            MoveTo(Cell + dir * n, dashTime, true)
-        );
+        StartCoroutine(MoveTo(Cell + dir * n, dashTime, true));
+
+        AudioManager.Instance.PlaySound(dashSlashSFX, 0.5f);
 
         return true;
     }
@@ -535,6 +559,8 @@ public class PlayerController : MonoBehaviour
     private void Slash(Vector3 a, Vector3 b)
     {
         float radius = board.cellSize * 0.4f;
+
+        
 
         var hits = Physics2D.CircleCastAll(
             a,

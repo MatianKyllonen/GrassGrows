@@ -19,6 +19,8 @@ public class Enemy : MonoBehaviour, IDamageable
 
     public GameObject boomEffect;
 
+    public AudioClip hurtSFX;
+
 
     private void Awake()
     {
@@ -34,6 +36,8 @@ public class Enemy : MonoBehaviour, IDamageable
         if (health <= 0) return;
 
         health -= damage;
+
+        AudioManager.Instance.PlaySound(hurtSFX, 0.5f);
 
         onHit?.Invoke();
 

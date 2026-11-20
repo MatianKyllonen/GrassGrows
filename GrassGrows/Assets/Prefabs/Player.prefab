@@ -51,8 +51,9 @@ MonoBehaviour:
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
-  stepTime: 0.3
+  stepTime: 0.45
   stepCooldown: 0.09
+  hopClipLength: 0.3
   dashChargeTime: 0.75
   canMoveWhileCharging: 0
   dashDistance: 3
@@ -95,6 +96,9 @@ MonoBehaviour:
   sprite: {fileID: 2031106267189693864}
   root: {fileID: 1750465576925930424}
   playerAnimator: {fileID: 6542130110285379381}
+  dashTickSFX: {fileID: 8300000, guid: d3a97520b6d40204383013f2d1e427e2, type: 3}
+  dashSlashSFX: {fileID: 8300000, guid: a2afb07f4b4bdb14a9574ea46119f2e9, type: 3}
+  slashSFX: {fileID: 8300000, guid: 72fb789e245055c47b7675fdd92847f2, type: 3}
 --- !u!61 &5232501228608823360
 BoxCollider2D:
   m_ObjectHideFlags: 0
