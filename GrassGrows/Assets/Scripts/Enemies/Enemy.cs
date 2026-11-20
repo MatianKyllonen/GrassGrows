@@ -6,6 +6,7 @@ using Unity.Mathematics;
 public class Enemy : MonoBehaviour, IDamageable
 {
     public int maxHealth = 1;
+    public int xpValue = 10;
     public UnityEvent onHit;
     public UnityEvent onDeath;
 
@@ -73,6 +74,7 @@ public class Enemy : MonoBehaviour, IDamageable
     private void Die()
     {
         GameObject boom = Instantiate(boomEffect, transform.position, quaternion.identity);
+        if (PlayerProgression.Instance) PlayerProgression.Instance.AddXP(xpValue);
         Destroy(boom, 2);
         onDeath?.Invoke();
         Destroy(gameObject);   // swap for a death animation later

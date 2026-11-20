@@ -53,15 +53,20 @@ MonoBehaviour:
     m_Bits: 128
   stepTime: 0.3
   stepCooldown: 0.09
-  dashChargeTime: 1
+  dashChargeTime: 0.75
   canMoveWhileCharging: 0
-  chargeColor: {r: 0.7607844, g: 0.44705886, b: 0.5176471, a: 1}
-  readyColor: {r: 1, g: 1, b: 1, a: 1}
   dashDistance: 3
   dashTime: 0.12
   dashCooldown: 0.1
-  dashBuffer: 0.3
-  dashDamage: 1
+  dashDamage: 2
+  readyPulseSpeed: 3
+  minFlashOpacity: 0
+  maxFlashOpacity: 0.2
+  attackDamage: 1
+  attackStartup: 0.12
+  attackActive: 0.06
+  attackRecovery: 0.25
+  attackEffectPrefab: {fileID: 0}
   maxHealth: 3
   invincibilityTime: 1.2
   blinkInterval: 0.08
@@ -134,7 +139,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.5, y: 0.5}
   m_EdgeRadius: 0
 --- !u!50 &4472703780450921271
 Rigidbody2D:
@@ -222,7 +227,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: fe5a094f008bacd47aa6d7a44a42a9f2, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

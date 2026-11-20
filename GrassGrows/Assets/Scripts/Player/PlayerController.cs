@@ -1,10 +1,15 @@
+
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
-public interface IDamageable { void Hit(Vector2 from, int damage); }
+public interface IDamageable
+{
+    void Hit(Vector2 from, int damage);
+}
 
 public class PlayerController : MonoBehaviour
 {
@@ -14,122 +19,237 @@ public class PlayerController : MonoBehaviour
     [Header("Step")]
     public float stepTime = 0.10f;
     public float stepCooldown = 0.03f;
+    public float hopClipLength = 0.3f;   // length of your Hop clip in seconds
 
     [Header("Dash")]
     public float dashChargeTime = 1.5f;
     public bool canMoveWhileCharging = false;
-    public Color chargeColor = new Color(1f, 0.85f, 0.4f);
-    public Color readyColor = Color.white;
-
-    public float ChargeProgress => Mathf.Clamp01(chargeHeld / dashChargeTime);
-    private bool isCharging;
-    private float chargeHeld;
-
     public int dashDistance = 2;
     public float dashTime = 0.12f;
     public float dashCooldown = 0.5f;
-    [Tooltip("Dash pressed slightly early still counts")]
-    public float dashBuffer = 0.15f;
     public int dashDamage = 1;
+    public event System.Action<Vector2Int, Vector2Int> onDashed;   // fromCell, toCell
+
+    public float ChargeProgress =>
+        Mathf.Clamp01(chargeHeld / dashChargeTime);
+
+    private bool isCharging;
+    private float chargeHeld;
+
+    [Header("Dash Flash")]
+    public float readyPulseSpeed = 5f;
+
+    [Range(0f, 1f)]
+    public float minFlashOpacity = 0.2f;
+
+    [Range(0f, 1f)]
+    public float maxFlashOpacity = 0.65f;
+
+    private MaterialPropertyBlock flashProperties;
+
+    [Header("Attack")]
+    public int attackDamage = 1;
+    public float attackStartup = 0.12f;
+    public float attackActive = 0.06f;
+    public float attackRecovery = 0.25f;
+    public GameObject attackEffectPrefab;
 
     [Header("Health")]
     public int maxHealth = 3;
     public float invincibilityTime = 1.2f;
     public float blinkInterval = 0.08f;
+
     [Tooltip("Contact radius as a fraction of cell size")]
     public float contactRadius = 0.35f;
-    public UnityEvent<int, int> onHealthChanged;   // current, max
-    public UnityEvent onHit;                       // sound / screen shake
-    public UnityEvent onDeath;                     // game over
 
-    public int Health { get; private set; }
-    public bool IsDead => Health <= 0;
-    public bool IsInvincible => invincibleLeft > 0f;
-    private float invincibleLeft;
+    public UnityEvent<int, int> onHealthChanged;
+    public UnityEvent onHit;
+    public UnityEvent onDeath;
 
     [Header("Visuals")]
-    public SpriteRenderer sprite;   // auto-found in children if left empty
-
-    private InputAction moveAction, dashAction;
-    private Vector2Int inputDir;
-    private Vector2Int lastDir = Vector2Int.down;
-    private float dashBufferLeft, dashCooldownLeft, stepCooldownLeft;
-    private bool isMoving;
-
+    public SpriteRenderer sprite;
     public Animator root;
     public Animator playerAnimator;
 
+    // ---------- Public state ----------
+
     public Vector2Int Cell { get; private set; }
     public bool IsDashing { get; private set; }
+    public int Health { get; private set; }
+    public bool IsDead => Health <= 0;
+    public bool IsInvincible => invincibleLeft > 0f;
+
+    // ---------- Private state ----------
+
+    private InputAction moveAction;
+    private InputAction dashAction;
+    private InputAction attackAction;
+
+    private Vector2Int inputDir;
+    private Vector2Int lastDir = Vector2Int.down;
+    private int facingX = 1;   // 1 = right, -1 = left. Attacks only go this way
+
+    private float dashCooldownLeft;
+    private float stepCooldownLeft;
+    private float invincibleLeft;
+
+
+
+    private bool isMoving;
+
+    private bool isAttacking;
+    private Coroutine attackRoutine;
+
+    // ---------- Initialization ----------
 
     private void Awake()
     {
-        moveAction = new InputAction("Move", InputActionType.Value);
-        moveAction.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/w").With("Down", "<Keyboard>/s").With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
-        moveAction.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow").With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
+        Health = maxHealth;
+
+        moveAction = new InputAction(
+            "Move",
+            InputActionType.Value
+        );
+
+        moveAction.AddCompositeBinding("2DVector")
+            .With("Up", "<Keyboard>/w")
+            .With("Down", "<Keyboard>/s")
+            .With("Left", "<Keyboard>/a")
+            .With("Right", "<Keyboard>/d");
+
+        moveAction.AddCompositeBinding("2DVector")
+            .With("Up", "<Keyboard>/upArrow")
+            .With("Down", "<Keyboard>/downArrow")
+            .With("Left", "<Keyboard>/leftArrow")
+            .With("Right", "<Keyboard>/rightArrow");
+
         moveAction.AddBinding("<Gamepad>/leftStick");
 
-        dashAction = new InputAction("Dash", InputActionType.Button);
+        dashAction = new InputAction(
+            "Dash",
+            InputActionType.Button
+        );
+
         dashAction.AddBinding("<Keyboard>/space");
         dashAction.AddBinding("<Gamepad>/buttonSouth");
-        if (!sprite) sprite = GetComponentInChildren<SpriteRenderer>();
 
-        Health = maxHealth;   // <-- add this
+        attackAction = new InputAction(
+            "Attack",
+            InputActionType.Button
+        );
 
+        attackAction.AddBinding("<Keyboard>/k");
+        attackAction.AddBinding("<Gamepad>/buttonWest");
+
+        if (!sprite)
+            sprite = GetComponentInChildren<SpriteRenderer>();
+
+        flashProperties = new MaterialPropertyBlock();
     }
 
     private void OnEnable()
     {
-        moveAction.Enable(); dashAction.Enable();
+        moveAction.Enable();
+        dashAction.Enable();
+        attackAction.Enable();
     }
 
     private void OnDisable()
     {
-        moveAction.Disable(); dashAction.Disable();
+        moveAction.Disable();
+        dashAction.Disable();
+        attackAction.Disable();
     }
-
-    private void OnDash(InputAction.CallbackContext _) => dashBufferLeft = dashBuffer;
 
     private void Start()
     {
+
         Cell = board.WorldToCell(transform.position);
-        transform.position = board.CellToWorld(Cell, transform.position.z);
+
+        transform.position = board.CellToWorld(
+            Cell,
+            transform.position.z
+        );
+
         onHealthChanged?.Invoke(Health, maxHealth);
+        RefreshHopSpeed();
     }
 
+    public void RefreshHopSpeed()
+    {
+        if (root) root.SetFloat("HopSpeed", hopClipLength / stepTime);
+    }
+
+    // ---------- Update ----------
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            SceneManager.LoadScene(
+                SceneManager.GetActiveScene().buildIndex
+            );
         }
 
+        if (Time.timeScale == 0f) return;
+
         if (IsDead) return;
+
         invincibleLeft -= Time.deltaTime;
+
         CheckContact();
 
         dashCooldownLeft -= Time.deltaTime;
         stepCooldownLeft -= Time.deltaTime;
 
         // Read movement input (horizontal OR vertical, never diagonal)
+
         Vector2 raw = moveAction.ReadValue<Vector2>();
+
         if (Mathf.Abs(raw.x) > Mathf.Abs(raw.y))
-            inputDir = Mathf.Abs(raw.x) > 0.5f ? new Vector2Int((int)Mathf.Sign(raw.x), 0) : Vector2Int.zero;
+        {
+            inputDir = Mathf.Abs(raw.x) > 0.5f
+                ? new Vector2Int((int)Mathf.Sign(raw.x), 0)
+                : Vector2Int.zero;
+        }
         else
-            inputDir = Mathf.Abs(raw.y) > 0.5f ? new Vector2Int(0, (int)Mathf.Sign(raw.y)) : Vector2Int.zero;
+        {
+            inputDir = Mathf.Abs(raw.y) > 0.5f
+                ? new Vector2Int(0, (int)Mathf.Sign(raw.y))
+                : Vector2Int.zero;
+        }
 
-        if (inputDir != Vector2Int.zero)
-            lastDir = inputDir;
+        // Facing only changes while free to act
 
-        // Face left / right
-        if (sprite && inputDir.x != 0)
-            sprite.flipX = inputDir.x < 0;
+        // Facing only changes while free to act
+        if (!isAttacking)
+        {
+            if (inputDir != Vector2Int.zero)
+                lastDir = inputDir;      // still used by the dash
+
+            if (inputDir.x != 0)
+            {
+                facingX = inputDir.x;
+                if (sprite) sprite.flipX = facingX < 0;
+            }
+        }
 
         if (isMoving) return;
+        if (isAttacking) return;
+
+        // ---- Attack ----
+
+        if (!isCharging && attackAction.WasPressedThisFrame())
+        {
+            attackRoutine = StartCoroutine(Attack());
+            return;
+        }
 
         // ---- Dash charge ----
-        if (!isCharging && dashAction.WasPressedThisFrame() && dashCooldownLeft <= 0f)
+
+        if (!isCharging &&
+            dashAction.WasPressedThisFrame() &&
+            dashCooldownLeft <= 0f)
         {
             isCharging = true;
             chargeHeld = 0f;
@@ -147,76 +267,221 @@ public class PlayerController : MonoBehaviour
             else
             {
                 // Released: dash only if fully charged
+
                 bool ready = chargeHeld >= dashChargeTime;
+
                 CancelCharge();
-                if (ready) TryDash();
+
+                if (ready)
+                    TryDash();
+
                 return;
             }
 
-            if (!canMoveWhileCharging) return;
+            if (!canMoveWhileCharging)
+                return;
         }
 
         // ---- Normal movement ----
-        if (inputDir != Vector2Int.zero && stepCooldownLeft <= 0f)
+
+        if (inputDir != Vector2Int.zero &&
+            stepCooldownLeft <= 0f)
+        {
             TryStep(inputDir);
+        }
     }
+
+    // ---------- Attack ----------
+
+    private IEnumerator Attack()
+    {
+        isAttacking = true;
+
+        Vector2Int dir = new Vector2Int(facingX, 0);   // horizontal only
+        Vector2Int target = Cell + dir;
+
+        if (sprite) sprite.flipX = facingX < 0;
+
+        playerAnimator.SetTrigger("Attack");
+
+        yield return new WaitForSeconds(attackStartup);
+
+        // Active: hit whatever is on the square in front
+
+        if (attackEffectPrefab)
+        {
+            Instantiate(
+                attackEffectPrefab,
+                board.CellToWorld(target, transform.position.z),
+                Quaternion.identity
+            );
+        }
+
+        var alreadyHit = new HashSet<Collider2D>();
+
+        float t = 0f;
+
+        do
+        {
+            HitCell(target, alreadyHit);
+
+            t += Time.deltaTime;
+
+            yield return null;
+
+        } while (t < attackActive);
+
+        // Recovery
+
+        yield return new WaitForSeconds(attackRecovery);
+
+        isAttacking = false;
+        attackRoutine = null;
+    }
+
+    private void HitCell(
+        Vector2Int c,
+        HashSet<Collider2D> alreadyHit)
+    {
+        Vector2 size = Vector2.one * board.cellSize * 0.8f;
+
+        var hits = Physics2D.OverlapBoxAll(
+            board.CellToWorld(c),
+            size,
+            0f,
+            enemyMask
+        );
+
+        foreach (var h in hits)
+        {
+            if (alreadyHit.Add(h) &&
+                h.TryGetComponent<IDamageable>(out var d))
+            {
+                d.Hit(transform.position, attackDamage);
+            }
+        }
+    }
+
+    private void CancelAttack()
+    {
+        if (attackRoutine != null)
+            StopCoroutine(attackRoutine);
+
+        attackRoutine = null;
+        isAttacking = false;
+    }
+
+    // ---------- Dash charge visuals ----------
 
     private void UpdateChargeVisual()
     {
         if (!sprite) return;
-        // Tint while charging, then pulse once fully charged
-        sprite.color = chargeHeld >= dashChargeTime
-            ? Color.Lerp(chargeColor, readyColor, Mathf.PingPong(Time.time * 8f, 1f))
-            : Color.Lerp(readyColor, chargeColor, ChargeProgress);
+
+        // Don't flash at all until fully charged
+        if (chargeHeld < dashChargeTime)
+            return;
+
+        // Pulse between minimum and maximum opacity
+        float flashAmount = Mathf.Lerp(
+            minFlashOpacity,
+            maxFlashOpacity,
+            Mathf.PingPong(Time.time * readyPulseSpeed, 1f)
+        );
+
+        sprite.GetPropertyBlock(flashProperties);
+
+        flashProperties.SetFloat("_FlashAmount", flashAmount);
+
+        sprite.SetPropertyBlock(flashProperties);
     }
 
     private void CancelCharge()
     {
         isCharging = false;
         chargeHeld = 0f;
-        if (sprite) sprite.color = readyColor;
+
+        // Reset white flash
+
+        if (sprite)
+        {
+            sprite.GetPropertyBlock(flashProperties);
+
+            flashProperties.SetFloat(
+                "_FlashAmount",
+                0f
+            );
+
+            sprite.SetPropertyBlock(flashProperties);
+        }
 
         playerAnimator.SetBool("Charging", false);
     }
 
+    // ---------- Movement ----------
+
     private void TryStep(Vector2Int dir)
     {
         Vector2Int target = Cell + dir;
-        if (board.IsBlocked(target)) return;
-        StartCoroutine(MoveTo(target, stepTime, false));
+
+        if (board.IsBlocked(target))
+            return;
+
+        StartCoroutine(
+            MoveTo(target, stepTime, false)
+        );
     }
 
     private bool TryDash()
     {
-        Vector2Int dir = inputDir != Vector2Int.zero ? inputDir : lastDir;
+        Vector2Int dir =
+            inputDir != Vector2Int.zero
+                ? inputDir
+                : lastDir;
 
-        // Go as far as possible up to dashDistance; cancel if even 1 square is blocked
+        // Go as far as possible up to dashDistance
+
         int n = 0;
+
         for (int i = 1; i <= dashDistance; i++)
         {
-            if (board.IsBlocked(Cell + dir * i)) break;
+            if (board.IsBlocked(Cell + dir * i))
+                break;
+
             n = i;
         }
-        if (n == 0) return false;
 
-        dashBufferLeft = 0f;
+        if (n == 0)
+            return false;
+
         dashCooldownLeft = dashCooldown;
-        StartCoroutine(MoveTo(Cell + dir * n, dashTime, true));
+
+        StartCoroutine(
+            MoveTo(Cell + dir * n, dashTime, true)
+        );
+
         return true;
     }
 
-
-    private IEnumerator MoveTo(Vector2Int target, float duration, bool dash)
+    private IEnumerator MoveTo(
+        Vector2Int target,
+        float duration,
+        bool dash)
     {
         CancelCharge();
 
         isMoving = true;
-        IsDashing = dash; // Important: set this BEFORE animation checks
+        IsDashing = dash;
 
         Vector3 start = transform.position;
-        Vector3 end = board.CellToWorld(target, start.z);
+
+        Vector3 end = board.CellToWorld(
+            target,
+            start.z
+        );
 
         Cell = target;
+
+        // Only normal movement plays Hop
 
         if (!dash)
         {
@@ -224,20 +489,37 @@ public class PlayerController : MonoBehaviour
             root.SetTrigger("Hop");
         }
 
+        Vector2Int from = Cell;
+        Cell = target;
+        // ...
         if (dash)
+        {
             Slash(start, end);
+            onDashed?.Invoke(from, target);
+        }
 
-        for (float t = 0f; t < 1f; t += Time.deltaTime / duration)
+        for (
+            float t = 0f;
+            t < 1f;
+            t += Time.deltaTime / duration
+        )
         {
             float e = dash
                 ? 1f - (1f - t) * (1f - t)
                 : t * t * (3f - 2f * t);
 
-            transform.position = Vector3.Lerp(start, end, e);
+            transform.position = Vector3.Lerp(
+                start,
+                end,
+                e
+            );
+
             yield return null;
         }
 
         transform.position = end;
+
+        // Only normal movement ends Hop
 
         if (!dash)
             root.SetTrigger("HopEnd");
@@ -248,54 +530,96 @@ public class PlayerController : MonoBehaviour
         stepCooldownLeft = stepCooldown;
     }
 
+    // ---------- Dash attack ----------
 
-    // Moving through enemies cuts them down
     private void Slash(Vector3 a, Vector3 b)
     {
         float radius = board.cellSize * 0.4f;
-        var hits = Physics2D.CircleCastAll(a, radius, (b - a).normalized,
-                                           Vector3.Distance(a, b), enemyMask);
+
+        var hits = Physics2D.CircleCastAll(
+            a,
+            radius,
+            (b - a).normalized,
+            Vector3.Distance(a, b),
+            enemyMask
+        );
+
         foreach (var h in hits)
-            if (h.collider.TryGetComponent<IDamageable>(out var d)) d.Hit(a, dashDamage);
+        {
+            if (h.collider.TryGetComponent<IDamageable>(out var d))
+                d.Hit(a, dashDamage);
+        }
     }
 
-    // Enemies call this. Dash gives brief invulnerability.
-    // Enemies call this on their attacks; CheckContact calls it when you touch one
+    // ---------- Health ----------
+
+    public void AddMaxHealth(int amount)
+    {
+        maxHealth += amount;
+        Health += amount;
+        onHealthChanged?.Invoke(Health, maxHealth);
+    }
+
     public void TakeHit()
     {
-        if (IsDead || IsDashing || IsInvincible) return;
+        if (IsDead || IsDashing || IsInvincible)
+            return;
 
         Health--;
+
         CancelCharge();
+        CancelAttack();
+
         onHit?.Invoke();
+
         onHealthChanged?.Invoke(Health, maxHealth);
 
-        if (IsDead) { Die(); return; }
+        if (IsDead)
+        {
+            Die();
+            return;
+        }
+
         StartCoroutine(Invincibility());
     }
 
     private void CheckContact()
     {
-        if (IsDashing || IsInvincible) return;
-        if (Physics2D.OverlapCircle(transform.position, board.cellSize * contactRadius, enemyMask))
+        if (IsDashing || IsInvincible)
+            return;
+
+        if (Physics2D.OverlapCircle(
+            transform.position,
+            board.cellSize * contactRadius,
+            enemyMask))
+        {
             TakeHit();
+        }
     }
 
     private IEnumerator Invincibility()
     {
         invincibleLeft = invincibilityTime;
+
         while (invincibleLeft > 0f)
         {
-            if (sprite) sprite.enabled = !sprite.enabled;   // blink
+            if (sprite)
+                sprite.enabled = !sprite.enabled;
+
             yield return new WaitForSeconds(blinkInterval);
         }
-        if (sprite) sprite.enabled = true;
+
+        if (sprite)
+            sprite.enabled = true;
     }
 
     private void Die()
     {
-        if (sprite) sprite.enabled = true;
+        if (sprite)
+            sprite.enabled = true;
+
         Debug.Log("Player died!");
+
         onDeath?.Invoke();
     }
 }
