@@ -1,28 +1,35 @@
+
 using UnityEngine;
 using System.Collections;
 using UnityEngine.Events;
-using Unity.Mathematics;
 
 public class Enemy : MonoBehaviour, IDamageable
 {
+    [Header("Health")]
     public int maxHealth = 1;
     public int xpValue = 10;
+
     public UnityEvent onHit;
     public UnityEvent onDeath;
 
     private int health;
     private SpriteRenderer spriteRenderer;
 
+    [Header("Hit Flash")]
     public float hitFlashDuration = 0.1f;
+
     private MaterialPropertyBlock propertyBlock;
     private Coroutine flashCoroutine;
 
+    private static readonly int FlashAmountID =
+        Shader.PropertyToID("_FlashAmount");
+
+    [Header("Effects")]
     public GameObject boomEffect;
-
-    public AudioClip hurtSFX;
-
     public GameObject damageIndicator;
 
+    [Header("Audio")]
+    public AudioClip hurtSFX;
 
     private void Awake()
     {
@@ -31,7 +38,6 @@ public class Enemy : MonoBehaviour, IDamageable
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         propertyBlock = new MaterialPropertyBlock();
-
     }
 
     public void Hit(Vector2 from, int damage)
@@ -40,13 +46,28 @@ public class Enemy : MonoBehaviour, IDamageable
 
         health -= damage;
 
-        GameObject indicator =Instantiate(damageIndicator, transform.position, Quaternion.identity);
-        indicator.GetComponent<DamageIndicator>().SetDamageText(damage, "-");
+        // Damage indicator
+        if (damageIndicator)
+        {
+            GameObject indicator = Instantiate(
+                damageIndicator,
+                transform.position,
+                Quaternion.identity
+            );
 
-        AudioManager.Instance.PlaySound(hurtSFX, 0.5f);
+            indicator.GetComponent<DamageIndicator>()
+                .SetDamageText(damage, "-");
+        }
+
+        // Hurt sound
+        if (hurtSFX && AudioManager.Instance)
+        {
+            AudioManager.Instance.PlaySound(hurtSFX, 0.5f);
+        }
 
         onHit?.Invoke();
 
+        // Hit flash
         if (spriteRenderer != null)
         {
             if (flashCoroutine != null)
@@ -59,6 +80,8 @@ public class Enemy : MonoBehaviour, IDamageable
             Die();
     }
 
+    // ---------- Hit Flash ----------
+
     private IEnumerator HitFlash()
     {
         float elapsed = 0f;
@@ -68,25 +91,51 @@ public class Enemy : MonoBehaviour, IDamageable
             float amount = 1f - (elapsed / hitFlashDuration);
 
             spriteRenderer.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetFloat("_FlashAmount", amount);
+
+            propertyBlock.SetFloat(
+                FlashAmountID,
+                amount
+            );
+
             spriteRenderer.SetPropertyBlock(propertyBlock);
 
             elapsed += Time.deltaTime;
+
             yield return null;
         }
 
-        propertyBlock.SetFloat("_FlashAmount", 0f);
+        // Reset flash
+        spriteRenderer.GetPropertyBlock(propertyBlock);
+
+        propertyBlock.SetFloat(FlashAmountID, 0f);
+
         spriteRenderer.SetPropertyBlock(propertyBlock);
 
         flashCoroutine = null;
     }
 
+    // ---------- Death ----------
+
     private void Die()
     {
-        GameObject boom = Instantiate(boomEffect, transform.position, quaternion.identity);
-        if (PlayerProgression.Instance) PlayerProgression.Instance.AddXP(xpValue);
-        Destroy(boom, 2);
+        GameObject boom = null;
+
+        if (boomEffect)
+        {
+            boom = Instantiate(
+                boomEffect,
+                transform.position,
+                Quaternion.identity
+            );
+
+            Destroy(boom, 2f);
+        }
+
+        if (PlayerProgression.Instance)
+            PlayerProgression.Instance.AddXP(xpValue);
+
         onDeath?.Invoke();
-        Destroy(gameObject);   // swap for a death animation later
+
+        Destroy(gameObject);
     }
 }

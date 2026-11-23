@@ -203,10 +203,10 @@ MonoBehaviour:
   onDeath:
     m_PersistentCalls:
       m_Calls: []
-  hitFlashDuration: 0.1
+  hitFlashDuration: 0.2
   boomEffect: {fileID: 4070262559041053841, guid: 2f7a0823585f88747a334fca287d595e, type: 3}
-  hurtSFX: {fileID: 8300000, guid: f345a1aa3dbdda64f92d52cf7fd3bf6c, type: 3}
   damageIndicator: {fileID: 2657388555782773284, guid: 6c3cc27731d7f494cb75ea6754fca02f, type: 3}
+  hurtSFX: {fileID: 8300000, guid: f345a1aa3dbdda64f92d52cf7fd3bf6c, type: 3}
 --- !u!114 &1209664149913998752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -334,7 +334,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fe5a094f008bacd47aa6d7a44a42a9f2, type: 2}
+  - {fileID: -876546973899608171, guid: e6ba96c6461ed054bb07fa23848da599, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

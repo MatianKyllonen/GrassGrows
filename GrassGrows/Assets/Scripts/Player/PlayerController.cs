@@ -19,7 +19,7 @@ public class PlayerController : MonoBehaviour
     [Header("Step")]
     public float stepTime = 0.10f;
     public float stepCooldown = 0.03f;
-    public float hopClipLength = 0.3f;   // length of your Hop clip in seconds
+    public float hopClipLength = 0.3f;
 
     [Header("Dash")]
     public float dashChargeTime = 1.5f;
@@ -28,7 +28,8 @@ public class PlayerController : MonoBehaviour
     public float dashTime = 0.12f;
     public float dashCooldown = 0.5f;
     public int dashDamage = 1;
-    public event System.Action<Vector2Int, Vector2Int> onDashed;   // fromCell, toCell
+
+    public event System.Action<Vector2Int, Vector2Int> onDashed;
     private int lastChargeTick;
 
     public float ChargeProgress =>
@@ -50,6 +51,7 @@ public class PlayerController : MonoBehaviour
 
     public float attackBuffer = 0.2f;
     private float attackBufferLeft;
+
     public float dashBuffer = 0.2f;
     private float dashBufferLeft;
 
@@ -70,14 +72,18 @@ public class PlayerController : MonoBehaviour
     [Header("Heal")]
     public float healHoldTime = 1f;
     public int healAmount = 1;
-    [Range(0f, 1f)] public float healXpCostFraction = 0.25f;
-    public UnityEvent onHealed;   // sound / green flash
 
-    public float HealProgress => Mathf.Clamp01(healHeld / healHoldTime);   // for a UI ring
+    [Range(0f, 1f)]
+    public float healXpCostFraction = 0.25f;
+
+    public UnityEvent onHealed;
+
+    public float HealProgress =>
+        Mathf.Clamp01(healHeld / healHoldTime);
 
     private InputAction healAction;
     private bool isHealing;
-    private bool healLatch;   // must release J before another heal can start
+    private bool healLatch;
     private float healHeld;
 
     [Tooltip("Contact radius as a fraction of cell size")]
@@ -114,16 +120,13 @@ public class PlayerController : MonoBehaviour
 
     private Vector2Int inputDir;
     private Vector2Int lastDir = Vector2Int.down;
-    private int facingX = 1;   // 1 = right, -1 = left. Attacks only go this way
+    private int facingX = 1;
 
     private float dashCooldownLeft;
     private float stepCooldownLeft;
     private float invincibleLeft;
 
-
-
     private bool isMoving;
-
     private bool isAttacking;
     private Coroutine attackRoutine;
 
@@ -152,7 +155,11 @@ public class PlayerController : MonoBehaviour
 
         moveAction.AddBinding("<Gamepad>/leftStick");
 
-        healAction = new InputAction("Heal", InputActionType.Button);
+        healAction = new InputAction(
+            "Heal",
+            InputActionType.Button
+        );
+
         healAction.AddBinding("<Keyboard>/j");
         healAction.AddBinding("<Gamepad>/buttonNorth");
 
@@ -175,7 +182,11 @@ public class PlayerController : MonoBehaviour
         if (!sprite)
             sprite = GetComponentInChildren<SpriteRenderer>();
 
+        // Initialize shader property block
         flashProperties = new MaterialPropertyBlock();
+
+        // Make sure flash starts disabled
+        ResetFlash();
     }
 
     private void OnEnable()
@@ -196,7 +207,6 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-
         Cell = board.WorldToCell(transform.position);
 
         transform.position = board.CellToWorld(
@@ -205,18 +215,24 @@ public class PlayerController : MonoBehaviour
         );
 
         onHealthChanged?.Invoke(Health, maxHealth);
+
         RefreshHopSpeed();
         RefreshChargeSpeed();
     }
 
     public void RefreshHopSpeed()
     {
-        if (root) root.SetFloat("HopSpeed", hopClipLength / stepTime);
+        if (root)
+            root.SetFloat("HopSpeed", hopClipLength / stepTime);
     }
 
     public void RefreshChargeSpeed()
     {
-        if (playerAnimator) playerAnimator.SetFloat("ChargeSpeed", 0.75f / dashChargeTime);
+        if (playerAnimator)
+            playerAnimator.SetFloat(
+                "ChargeSpeed",
+                0.75f / dashChargeTime
+            );
     }
 
     // ---------- Update ----------
@@ -224,7 +240,9 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            SceneManager.LoadScene(
+                SceneManager.GetActiveScene().buildIndex
+            );
 
         if (Time.timeScale == 0f) return;
         if (IsDead) return;
@@ -236,12 +254,21 @@ public class PlayerController : MonoBehaviour
         stepCooldownLeft -= Time.deltaTime;
         attackBufferLeft -= Time.deltaTime;
 
-        // Read movement input (horizontal OR vertical, never diagonal)
+        // Read movement input
         Vector2 raw = moveAction.ReadValue<Vector2>();
+
         if (Mathf.Abs(raw.x) > Mathf.Abs(raw.y))
-            inputDir = Mathf.Abs(raw.x) > 0.5f ? new Vector2Int((int)Mathf.Sign(raw.x), 0) : Vector2Int.zero;
+        {
+            inputDir = Mathf.Abs(raw.x) > 0.5f
+                ? new Vector2Int((int)Mathf.Sign(raw.x), 0)
+                : Vector2Int.zero;
+        }
         else
-            inputDir = Mathf.Abs(raw.y) > 0.5f ? new Vector2Int(0, (int)Mathf.Sign(raw.y)) : Vector2Int.zero;
+        {
+            inputDir = Mathf.Abs(raw.y) > 0.5f
+                ? new Vector2Int(0, (int)Mathf.Sign(raw.y))
+                : Vector2Int.zero;
+        }
 
         if (!isAttacking)
         {
@@ -251,32 +278,34 @@ public class PlayerController : MonoBehaviour
             if (inputDir.x != 0)
             {
                 facingX = inputDir.x;
-                if (sprite) sprite.flipX = facingX < 0;
+
+                if (sprite)
+                    sprite.flipX = facingX < 0;
             }
         }
 
         bool attackPressed = attackAction.WasPressedThisFrame();
-        bool inHop = isMoving && !IsDashing;   // buffering is only allowed during a normal hop
+        bool inHop = isMoving && !IsDashing;
 
-        // Attack: press or hold of K during a hop is remembered
-        if (inHop && !isCharging && (attackPressed || attackAction.IsPressed()))
+        // Attack buffering
+        if (inHop && !isCharging &&
+            (attackPressed || attackAction.IsPressed()))
+        {
             attackBufferLeft = attackBuffer;
+        }
 
-        // Dash: Space pressed during a hop queues a charge for when the hop ends
-        // Dash: buffer presses even while idle or moving
+        // Dash buffering
         if (dashAction.WasPressedThisFrame())
         {
             dashBufferLeft = dashBuffer;
             dashQueued = true;
         }
 
-        // Holding Space keeps the dash request alive
         if (dashAction.IsPressed() && dashQueued)
         {
             dashBufferLeft = dashBuffer;
         }
 
-        // Expire the buffer if Space was released and the timer ran out
         if (dashBufferLeft > 0f)
         {
             dashBufferLeft -= Time.deltaTime;
@@ -289,12 +318,15 @@ public class PlayerController : MonoBehaviour
         if (isMoving) return;
         if (isAttacking) return;
 
-        // ---- Heal (hold J) ----
-        if (!healAction.IsPressed()) healLatch = false;
+        // ---- Heal ----
+
+        if (!healAction.IsPressed())
+            healLatch = false;
 
         if (isHealing)
         {
             playerAnimator.SetBool("isHealing", true);
+
             if (!healAction.IsPressed() || !CanHeal())
             {
                 CancelHeal();
@@ -302,11 +334,17 @@ public class PlayerController : MonoBehaviour
             else
             {
                 healHeld += Time.deltaTime;
-                if (healHeld >= healHoldTime) CompleteHeal();
-                return;   // rooted while channeling
+
+                if (healHeld >= healHoldTime)
+                    CompleteHeal();
+
+                return;
             }
         }
-        else if (!isCharging && !healLatch && healAction.IsPressed() && CanHeal())
+        else if (!isCharging &&
+                 !healLatch &&
+                 healAction.IsPressed() &&
+                 CanHeal())
         {
             isHealing = true;
             healHeld = 0f;
@@ -314,15 +352,18 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // ---- Attack (fresh press while free, or buffered from a hop) ----
-        if (!isCharging && (attackPressed || attackBufferLeft > 0f))
+        // ---- Attack ----
+
+        if (!isCharging &&
+            (attackPressed || attackBufferLeft > 0f))
         {
             attackBufferLeft = 0f;
             attackRoutine = StartCoroutine(Attack());
             return;
         }
 
-        // ---- Dash charge: fresh press, or Space held through a move ----
+        // ---- Dash charge ----
+
         if (!isCharging &&
             dashQueued &&
             dashCooldownLeft <= 0f)
@@ -342,50 +383,73 @@ public class PlayerController : MonoBehaviour
             if (dashAction.IsPressed())
             {
                 chargeHeld += Time.deltaTime;
+
                 UpdateChargeVisual();
                 UpdateChargeTicks();
             }
             else
             {
                 bool ready = chargeHeld >= dashChargeTime;
+
                 CancelCharge();
-                if (ready) TryDash();
+
+                if (ready)
+                    TryDash();
+
                 return;
             }
 
-            if (!canMoveWhileCharging) return;
+            if (!canMoveWhileCharging)
+                return;
         }
 
         // ---- Normal movement ----
-        if (inputDir != Vector2Int.zero && stepCooldownLeft <= 0f)
+
+        if (inputDir != Vector2Int.zero &&
+            stepCooldownLeft <= 0f)
+        {
             TryStep(inputDir);
+        }
     }
 
+    // ---------- Healing ----------
+
     private int HealCost =>
-    PlayerProgression.Instance ? PlayerProgression.Instance.CostFromFraction(healXpCostFraction) : int.MaxValue;
+        PlayerProgression.Instance
+            ? PlayerProgression.Instance.CostFromFraction(
+                healXpCostFraction
+            )
+            : int.MaxValue;
 
     private bool CanHeal() =>
-        !IsDead && Health < maxHealth &&
+        !IsDead &&
+        Health < maxHealth &&
         PlayerProgression.Instance != null &&
         PlayerProgression.Instance.XP >= HealCost;
 
     private void CompleteHeal()
     {
-        // XP is only spent here, so cancelling early costs nothing
         if (PlayerProgression.Instance.TrySpendXP(HealCost))
         {
             AudioManager.Instance.PlaySound(healSFX, 1f);
-            Health = Mathf.Min(maxHealth, Health + healAmount);
+
+            Health = Mathf.Min(
+                maxHealth,
+                Health + healAmount
+            );
+
             onHealthChanged?.Invoke(Health, maxHealth);
             onHealed?.Invoke();
         }
-        healLatch = true;   // release J, then press again for another heal
+
+        healLatch = true;
         CancelHeal();
     }
 
     private void CancelHeal()
     {
         playerAnimator.SetBool("isHealing", false);
+
         isHealing = false;
         healHeld = 0f;
     }
@@ -399,22 +463,24 @@ public class PlayerController : MonoBehaviour
 
         AudioManager.Instance.PlaySound(slashSFX, 0.5f);
 
-        Vector2Int dir = new Vector2Int(facingX, 0);   // horizontal only
+        Vector2Int dir = new Vector2Int(facingX, 0);
         Vector2Int target = Cell + dir;
 
-        if (sprite) sprite.flipX = facingX < 0;
+        if (sprite)
+            sprite.flipX = facingX < 0;
 
         playerAnimator.SetTrigger("Attack");
 
         yield return new WaitForSeconds(attackStartup);
 
-        // Active: hit whatever is on the square in front
-
         if (attackEffectPrefab)
         {
             Instantiate(
                 attackEffectPrefab,
-                board.CellToWorld(target, transform.position.z),
+                board.CellToWorld(
+                    target,
+                    transform.position.z
+                ),
                 Quaternion.identity
             );
         }
@@ -432,8 +498,6 @@ public class PlayerController : MonoBehaviour
             yield return null;
 
         } while (t < attackActive);
-
-        // Recovery
 
         yield return new WaitForSeconds(attackRecovery);
 
@@ -479,20 +543,45 @@ public class PlayerController : MonoBehaviour
     {
         if (!sprite) return;
 
-        // Don't flash at all until fully charged
+        // Don't flash until fully charged
         if (chargeHeld < dashChargeTime)
+        {
+            ResetFlash();
             return;
+        }
 
-        // Pulse between minimum and maximum opacity
+        // Pulse between minimum and maximum flash
         float flashAmount = Mathf.Lerp(
             minFlashOpacity,
             maxFlashOpacity,
-            Mathf.PingPong(Time.time * readyPulseSpeed, 1f)
+            Mathf.PingPong(
+                Time.time * readyPulseSpeed,
+                1f
+            )
         );
 
         sprite.GetPropertyBlock(flashProperties);
 
-        flashProperties.SetFloat("_FlashAmount", flashAmount);
+        flashProperties.SetFloat(
+            "_FlashAmount",
+            flashAmount
+        );
+
+        sprite.SetPropertyBlock(flashProperties);
+    }
+
+    // Reset the shader flash
+    private void ResetFlash()
+    {
+        if (!sprite || flashProperties == null)
+            return;
+
+        sprite.GetPropertyBlock(flashProperties);
+
+        flashProperties.SetFloat(
+            "_FlashAmount",
+            0f
+        );
 
         sprite.SetPropertyBlock(flashProperties);
     }
@@ -503,20 +592,10 @@ public class PlayerController : MonoBehaviour
         chargeHeld = 0f;
 
         // Reset white flash
+        ResetFlash();
 
-        if (sprite)
-        {
-            sprite.GetPropertyBlock(flashProperties);
-
-            flashProperties.SetFloat(
-                "_FlashAmount",
-                0f
-            );
-
-            sprite.SetPropertyBlock(flashProperties);
-        }
-
-        playerAnimator.SetBool("Charging", false);
+        if (playerAnimator)
+            playerAnimator.SetBool("Charging", false);
     }
 
     private void UpdateChargeTicks()
@@ -530,7 +609,12 @@ public class PlayerController : MonoBehaviour
             lastChargeTick = tick;
 
             if (dashTickSFX)
-                AudioManager.Instance.PlaySound(dashTickSFX, 0.5f);
+            {
+                AudioManager.Instance.PlaySound(
+                    dashTickSFX,
+                    0.5f
+                );
+            }
         }
     }
 
@@ -555,8 +639,6 @@ public class PlayerController : MonoBehaviour
                 ? inputDir
                 : lastDir;
 
-        // Go as far as possible up to dashDistance
-
         int n = 0;
 
         for (int i = 1; i <= dashDistance; i++)
@@ -572,9 +654,14 @@ public class PlayerController : MonoBehaviour
 
         dashCooldownLeft = dashCooldown;
 
-        StartCoroutine(MoveTo(Cell + dir * n, dashTime, true));
+        StartCoroutine(
+            MoveTo(Cell + dir * n, dashTime, true)
+        );
 
-        AudioManager.Instance.PlaySound(dashSlashSFX, 0.5f);
+        AudioManager.Instance.PlaySound(
+            dashSlashSFX,
+            0.5f
+        );
 
         return true;
     }
@@ -600,15 +687,12 @@ public class PlayerController : MonoBehaviour
         Cell = target;
 
         // Only normal movement plays Hop
-
         if (!dash)
         {
             root.ResetTrigger("HopEnd");
             root.SetTrigger("Hop");
         }
 
-
-        // ...
         if (dash)
         {
             Slash(start, end);
@@ -636,8 +720,6 @@ public class PlayerController : MonoBehaviour
 
         transform.position = end;
 
-        // Only normal movement ends Hop
-
         if (!dash)
             root.SetTrigger("HopEnd");
 
@@ -652,8 +734,6 @@ public class PlayerController : MonoBehaviour
     private void Slash(Vector3 a, Vector3 b)
     {
         float radius = board.cellSize * 0.4f;
-
-
 
         var hits = Physics2D.CircleCastAll(
             a,
@@ -676,6 +756,7 @@ public class PlayerController : MonoBehaviour
     {
         maxHealth += amount;
         Health += amount;
+
         onHealthChanged?.Invoke(Health, maxHealth);
     }
 

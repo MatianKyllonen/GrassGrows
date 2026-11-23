@@ -7,8 +7,11 @@ public class GameManager : MonoBehaviour
     public PlayerController player;
     public BoardGrid board;
 
+    public Animator fader;
+
     [Header("Timer")]
     public TextMeshProUGUI timerText;
+    
 
     private float elapsedTime;
     private bool timerRunning = false;
@@ -20,6 +23,11 @@ public class GameManager : MonoBehaviour
             instance = this;
 
         StartTimer();
+    }
+
+    private void Start()
+    {
+        fader.SetTrigger("FadeEnd");
     }
 
     void Update()
