@@ -92,10 +92,11 @@ public class PlayerController : MonoBehaviour
     public Animator root;
     public Animator playerAnimator;
 
-    [Header("Audi")]
+    [Header("Audio")]
     public AudioClip dashTickSFX;
     public AudioClip dashSlashSFX;
     public AudioClip slashSFX;
+    public AudioClip healSFX;
 
     // ---------- Public state ----------
 
@@ -293,6 +294,7 @@ public class PlayerController : MonoBehaviour
 
         if (isHealing)
         {
+            playerAnimator.SetBool("isHealing", true);
             if (!healAction.IsPressed() || !CanHeal())
             {
                 CancelHeal();
@@ -372,6 +374,7 @@ public class PlayerController : MonoBehaviour
         // XP is only spent here, so cancelling early costs nothing
         if (PlayerProgression.Instance.TrySpendXP(HealCost))
         {
+            AudioManager.Instance.PlaySound(healSFX, 1f);
             Health = Mathf.Min(maxHealth, Health + healAmount);
             onHealthChanged?.Invoke(Health, maxHealth);
             onHealed?.Invoke();
@@ -382,6 +385,7 @@ public class PlayerController : MonoBehaviour
 
     private void CancelHeal()
     {
+        playerAnimator.SetBool("isHealing", false);
         isHealing = false;
         healHeld = 0f;
     }

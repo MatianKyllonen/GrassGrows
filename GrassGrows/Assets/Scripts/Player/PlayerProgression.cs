@@ -28,6 +28,8 @@ public class PlayerProgression : MonoBehaviour
     private int pendingLevelUps;
     private bool choosing;
 
+    public AudioClip levelUpSFX;
+
     private void Awake()
     {
         Instance = this;
@@ -57,6 +59,7 @@ public class PlayerProgression : MonoBehaviour
         XP += amount;
         while (XP >= XpToNext)
         {
+            AudioManager.Instance.PlaySound(levelUpSFX, 1f);
             XP -= XpToNext;
             Level++;
             pendingLevelUps++;

@@ -21,6 +21,8 @@ public class Enemy : MonoBehaviour, IDamageable
 
     public AudioClip hurtSFX;
 
+    public GameObject damageIndicator;
+
 
     private void Awake()
     {
@@ -29,6 +31,7 @@ public class Enemy : MonoBehaviour, IDamageable
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         propertyBlock = new MaterialPropertyBlock();
+
     }
 
     public void Hit(Vector2 from, int damage)
@@ -36,6 +39,9 @@ public class Enemy : MonoBehaviour, IDamageable
         if (health <= 0) return;
 
         health -= damage;
+
+        GameObject indicator =Instantiate(damageIndicator, transform.position, Quaternion.identity);
+        indicator.GetComponent<DamageIndicator>().SetDamageText(damage, "-");
 
         AudioManager.Instance.PlaySound(hurtSFX, 0.5f);
 

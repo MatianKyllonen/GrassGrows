@@ -220,7 +220,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 3274846770
+    rgba: 1681011250
   m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 0.39215687}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -350,14 +350,14 @@ MonoBehaviour:
       m_Calls: []
   m_text: The quick brown fox jumps over the lazy dog lorem ipsum ipsum lorem ipsum
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 783e4f6628bcf6f4196ecca4eb222af5, type: 2}
-  m_sharedMaterial: {fileID: -916310160487926896, guid: 783e4f6628bcf6f4196ecca4eb222af5, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: a30707796d666794dbb2d25e557747e5, type: 2}
+  m_sharedMaterial: {fileID: 8189980459164537609, guid: a30707796d666794dbb2d25e557747e5, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 3264714647
+    rgba: 4288124823
   m_fontColor: {r: 0.5921569, g: 0.5921569, b: 0.5921569, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
