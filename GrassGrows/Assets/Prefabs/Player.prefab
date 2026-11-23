@@ -58,7 +58,7 @@ MonoBehaviour:
   canMoveWhileCharging: 0
   dashDistance: 3
   dashTime: 0.12
-  dashCooldown: 0.1
+  dashCooldown: 1
   dashDamage: 2
   readyPulseSpeed: 3
   minFlashOpacity: 0
@@ -73,6 +73,12 @@ MonoBehaviour:
   maxHealth: 3
   invincibilityTime: 1.2
   blinkInterval: 0.08
+  healHoldTime: 1
+  healAmount: 1
+  healXpCostFraction: 0.25
+  onHealed:
+    m_PersistentCalls:
+      m_Calls: []
   contactRadius: 0.35
   onHealthChanged:
     m_PersistentCalls:
