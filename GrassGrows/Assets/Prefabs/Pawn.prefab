@@ -77,8 +77,8 @@ MonoBehaviour:
     m_Bits: 128
   root: {fileID: 423257124606924381}
   forward: {x: -1, y: 0}
-  stepInterval: 0.9
-  moveTime: 0.3
+  stepInterval: 0.6
+  moveTime: 0.45
 --- !u!61 &7635162906682323284
 BoxCollider2D:
   m_ObjectHideFlags: 0

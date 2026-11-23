@@ -23,8 +23,14 @@ public class StatUpgrade : Upgrade
             case Stat.DashDamage: p.dashDamage += (int)amount; break;
             case Stat.AttackDamage: p.attackDamage += (int)amount; break;
             case Stat.DashDistance: p.dashDistance += (int)amount; break;
-            case Stat.Invincibility: p.invincibilityTime += amount; break;
-            case Stat.DashChargeTime: p.dashChargeTime = Mathf.Max(0.3f, p.dashChargeTime * cut); break;
+            case Stat.Invincibility:
+                p.invincibilityTime += amount;
+                break;
+
+            case Stat.DashChargeTime:
+                p.dashChargeTime = Mathf.Max(0.3f, p.dashChargeTime * cut);
+                p.RefreshChargeSpeed();
+                break;
             case Stat.DashCooldown: p.dashCooldown = Mathf.Max(0f, p.dashCooldown * cut); break;
 
             case Stat.StepSpeed:

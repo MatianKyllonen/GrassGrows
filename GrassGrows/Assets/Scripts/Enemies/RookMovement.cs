@@ -1,66 +1,94 @@
+
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class RookMovement : EnemyMovement
 {
+    [Header("Movement")]
     public int range = 6;
     public float rest = 1.4f;
-    public float windup = 0.6f;      // telegraph before the charge
-    public float cellTime = 0.05f;   // time per square while charging
-
-    private SpriteRenderer sr;
-    private Color baseColor;
-
-    private static readonly Vector2Int[] Dirs =
-        { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down };
+    public float windup = 0.6f;
+    public float cellTime = 0.05f;
 
     protected override void Start()
     {
-        sr = GetComponentInChildren<SpriteRenderer>();
-        if (sr) baseColor = sr.color;
+        RefreshHopSpeed();
         base.Start();
+    }
+
+    public void RefreshHopSpeed()
+    {
+        if (root && cellTime > 0f)
+            root.SetFloat("HopSpeed", 0.3f / cellTime);
     }
 
     protected override IEnumerator Brain()
     {
         while (true)
         {
+            // Rest before deciding where to move.
             yield return new WaitForSeconds(rest);
-            if (player.IsDead) yield break;
 
-            Vector2Int dir = PickDirection();
-            if (dir == Vector2Int.zero) continue;   // boxed in, try again later
+            if (player.IsDead)
+                yield break;
 
-            if (sr) sr.color = Color.red;           // telegraph
+            Vector2Int direction = PickDirection();
+
+            if (direction == Vector2Int.zero)
+                continue;
+
+            // Telegraph the committed direction.
+            Color originalColor = sprite ? sprite.color : Color.white;
+
+            if (sprite)
+                sprite.color = Color.red;
+
             yield return new WaitForSeconds(windup);
-            if (sr) sr.color = baseColor;
 
+            if (sprite)
+                sprite.color = originalColor;
+
+            // Move one square at a time.
             for (int i = 0; i < range; i++)
             {
-                Vector2Int next = cell + dir;
-                if (!CanEnter(next)) break;
+                Vector2Int next = cell + direction;
+
+                if (!CanEnter(next))
+                    break;
+
                 yield return Move(next, cellTime);
-                if (player.Cell == cell) player.TakeHit();
+
+                if (player.Cell == cell)
+                {
+                    player.TakeHit();
+                    break;
+                }
+
+                if (player.IsDead)
+                    yield break;
             }
         }
     }
 
-    // Charge straight at the player if lined up, otherwise close the distance
     private Vector2Int PickDirection()
     {
-        var closing = new List<Vector2Int>();
-        foreach (var d in Dirs)
-        {
-            if (!CanEnter(cell + d)) continue;
+        Vector2Int difference = player.Cell - cell;
 
-            for (int i = 1; i <= range; i++)
-                if (cell + d * i == player.Cell) return d;   // player in line
+        if (difference == Vector2Int.zero)
+            return Vector2Int.zero;
 
-            // Does this direction bring us closer?
-            if ((player.Cell - cell).x * d.x > 0 || (player.Cell - cell).y * d.y > 0)
-                closing.Add(d);
-        }
-        return closing.Count > 0 ? closing[Random.Range(0, closing.Count)] : Vector2Int.zero;
+        // If the player is on the same row, move horizontally.
+        if (difference.y == 0)
+            return new Vector2Int((int)Mathf.Sign(difference.x), 0);
+
+        // If the player is on the same column, move vertically.
+        if (difference.x == 0)
+            return new Vector2Int(0, (int)Mathf.Sign(difference.y));
+
+        // Otherwise, choose the axis that brings the rook closer.
+        if (Mathf.Abs(difference.x) >= Mathf.Abs(difference.y))
+            return new Vector2Int((int)Mathf.Sign(difference.x), 0);
+
+        return new Vector2Int(0, (int)Mathf.Sign(difference.y));
     }
 }

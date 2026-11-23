@@ -63,6 +63,8 @@ MonoBehaviour:
   readyPulseSpeed: 3
   minFlashOpacity: 0
   maxFlashOpacity: 0.2
+  attackBuffer: 0.35
+  dashBuffer: 0.35
   attackDamage: 1
   attackStartup: 0.12
   attackActive: 0.06
@@ -74,7 +76,19 @@ MonoBehaviour:
   contactRadius: 0.35
   onHealthChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: PlayerHealthBar, Assembly-CSharp
+        m_MethodName: SetHealth
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onHit:
     m_PersistentCalls:
       m_Calls:

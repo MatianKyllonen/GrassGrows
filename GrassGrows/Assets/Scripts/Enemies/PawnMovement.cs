@@ -5,44 +5,83 @@ public class PawnMovement : EnemyMovement
 {
     public float stepInterval = 0.9f;
     public float moveTime = 0.2f;
+    [Tooltip("Gap between choosing a square and moving there. The player can dodge inside this window.")]
+    public float reactionDelay = 0.35f;
+
+    protected override void Start()
+    {
+        RefreshHopSpeed();
+        base.Start();
+    }
+
+    public void RefreshHopSpeed()
+    {
+        if (root) root.SetFloat("HopSpeed", 0.3f / moveTime);
+    }
 
     protected override IEnumerator Brain()
     {
         yield return new WaitForSeconds(Random.Range(0f, stepInterval)); // desync pawns
+
         while (true)
         {
-            yield return new WaitForSeconds(stepInterval);
+            // Rest, then look at the player and commit
+            yield return new WaitForSeconds(Mathf.Max(0f, stepInterval - reactionDelay));
             if (player.IsDead) yield break;
 
-            forward = DirToPlayer();
+            Vector2Int intent = ChooseTarget();
 
-            // Capture diagonally forward
-            Vector2Int diagA = cell + forward + Side;
-            Vector2Int diagB = cell + forward - Side;
-            if (player.Cell == diagA) { yield return Move(diagA, moveTime); player.TakeHit(); continue; }
-            if (player.Cell == diagB) { yield return Move(diagB, moveTime); player.TakeHit(); continue; }
+            // Blind period: the player may move away, the pawn doesn't re-check
+            yield return new WaitForSeconds(reactionDelay);
+            if (player.IsDead) yield break;
 
-            Vector2Int next = cell + forward;
+            if (intent == cell) continue;
 
-            // Player is directly in front: pawns can't capture head-on, so sidestep
-            // and capture diagonally next turn
-            if (next == player.Cell)
-            {
-                Vector2Int s = Random.value < 0.5f ? Side : -Side;
-                if (CanEnter(cell + s) && player.Cell != cell + s)
-                    yield return Move(cell + s, moveTime);
-                continue;
-            }
+            bool diagonal = intent.x != cell.x && intent.y != cell.y;
 
-            if (CanEnter(next)) { yield return Move(next, moveTime); continue; }
+            // Pawns never capture head-on
+            if (!diagonal && intent == player.Cell) continue;
 
-            // Blocked by a wall or another enemy: try the other axis toward the player
-            Vector2Int d = player.Cell - cell;
-            Vector2Int alt = forward.x != 0
-                ? new Vector2Int(0, d.y != 0 ? (int)Mathf.Sign(d.y) : 0)
-                : new Vector2Int(d.x != 0 ? (int)Mathf.Sign(d.x) : 0, 0);
-            if (alt != Vector2Int.zero && CanEnter(cell + alt) && player.Cell != cell + alt)
-                yield return Move(cell + alt, moveTime);
+            // Never enter walls or other enemies
+            if (!CanEnter(intent)) continue;
+
+            yield return Move(intent, moveTime);
+
+            // Only a diagonal capture hurts, and only if the player is actually there
+            if (diagonal && player.Cell == cell) player.TakeHit();
         }
+    }
+
+    // Uses the player's position RIGHT NOW, but the move happens later
+    private Vector2Int ChooseTarget()
+    {
+        forward = DirToPlayer();
+
+        Vector2Int diagA = cell + forward + Side;
+        Vector2Int diagB = cell + forward - Side;
+        if (player.Cell == diagA) return diagA;   // commit to a capture
+        if (player.Cell == diagB) return diagB;
+
+        Vector2Int next = cell + forward;
+
+        // Player directly in front: sidestep so a diagonal capture is possible later
+        if (next == player.Cell)
+        {
+            Vector2Int s = Random.value < 0.5f ? Side : -Side;
+            if (CanEnter(cell + s)) return cell + s;
+            if (CanEnter(cell - s)) return cell - s;
+            return cell;
+        }
+
+        if (CanEnter(next)) return next;
+
+        // Blocked: try the other axis toward the player
+        Vector2Int d = player.Cell - cell;
+        Vector2Int alt = forward.x != 0
+            ? new Vector2Int(0, d.y != 0 ? (int)Mathf.Sign(d.y) : 0)
+            : new Vector2Int(d.x != 0 ? (int)Mathf.Sign(d.x) : 0, 0);
+        if (alt != Vector2Int.zero && CanEnter(cell + alt)) return cell + alt;
+
+        return cell;
     }
 }

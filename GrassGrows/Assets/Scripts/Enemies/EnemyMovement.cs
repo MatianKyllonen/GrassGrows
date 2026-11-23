@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class EnemyMovement : MonoBehaviour
@@ -11,6 +12,9 @@ public abstract class EnemyMovement : MonoBehaviour
     protected SpriteRenderer sprite;
 
     [HideInInspector] public Vector2Int forward = Vector2Int.left;   // recalculated toward the player
+    private static readonly List<EnemyMovement> all = new List<EnemyMovement>();
+    protected virtual void OnEnable() => all.Add(this);
+    protected virtual void OnDisable() => all.Remove(this);
 
     // Axis direction toward the player (the longer axis wins)
     protected Vector2Int DirToPlayer()
@@ -42,6 +46,11 @@ public abstract class EnemyMovement : MonoBehaviour
     protected bool CanEnter(Vector2Int c)
     {
         if (board.IsBlocked(c)) return false;
+
+        // Squares claimed by other enemies, including ones still mid-hop toward it
+        foreach (var e in all)
+            if (e != this && e.cell == c) return false;
+
         foreach (var h in Physics2D.OverlapPointAll(board.CellToWorld(c), enemyMask))
             if (h.gameObject != gameObject) return false;
         return true;
@@ -56,6 +65,8 @@ public abstract class EnemyMovement : MonoBehaviour
         if (direction.x != 0)
             sprite.flipX = direction.x < 0;
     }
+
+
 
     protected IEnumerator Move(Vector2Int target, float duration)
     {

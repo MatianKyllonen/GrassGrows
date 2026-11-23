@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -16,6 +17,7 @@ public class PlayerProgression : MonoBehaviour
     [Header("Upgrades")]
     public Upgrade[] upgradePool;
     public UpgradeSelectionUI selectionUI;
+    public Animator cardUIAnimator;
 
     public int Level { get; private set; } = 1;
     public int XP { get; private set; }
@@ -40,6 +42,14 @@ public class PlayerProgression : MonoBehaviour
         onLevelChanged?.Invoke(Level);
     }
 
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            AddXP(XpToNext);
+        }
+    }
+
     public void AddXP(int amount)
     {
         if (player.IsDead) return;
@@ -54,7 +64,11 @@ public class PlayerProgression : MonoBehaviour
         }
         Refresh();
 
-        if (pendingLevelUps > 0 && !choosing) ShowChoices();
+        if (pendingLevelUps > 0 && !choosing)
+        {
+            ShowChoices();
+            cardUIAnimator.SetTrigger("Open");
+        }
     }
 
     private void Refresh()
@@ -91,6 +105,16 @@ public class PlayerProgression : MonoBehaviour
         selectionUI.Show(picks, Choose);
     }
 
+    public int CostFromFraction(float fraction) => Mathf.CeilToInt(XpToNext * fraction);
+
+    public bool TrySpendXP(int amount)
+    {
+        if (XP < amount) return false;
+        XP -= amount;
+        Refresh();
+        return true;
+    }
+
     private void Choose(Upgrade u)
     {
         int stack = Stacks(u) + 1;
@@ -99,9 +123,26 @@ public class PlayerProgression : MonoBehaviour
 
         pendingLevelUps--;
         choosing = false;
-        selectionUI.Hide();
 
-        if (pendingLevelUps > 0) ShowChoices();   // leveled up more than once
-        else Time.timeScale = 1f;
+        if (pendingLevelUps > 0)
+        {
+            ShowChoices();   // leveled up more than once
+        }
+        else
+        {
+            StartCoroutine(CloseCards());
+        }
+    }
+
+    private IEnumerator CloseCards()
+    {
+        cardUIAnimator.SetTrigger("Close");
+
+        yield return new WaitForSecondsRealtime(0.5f);
+
+        selectionUI.Hide();
+        Time.timeScale = 1f;
+
+
     }
 }

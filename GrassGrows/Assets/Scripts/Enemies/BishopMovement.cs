@@ -1,55 +1,57 @@
+
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BishopMovement : EnemyMovement
 {
+    [Header("Movement")]
     public int range = 6;
     public float rest = 1.4f;
     public float windup = 0.6f;
     public float cellTime = 0.05f;
 
-    private SpriteRenderer sr;
-    private Color baseColor;
-
-    private static readonly Vector2Int[] Dirs =
-    {
-        new Vector2Int(-1, -1),
-        new Vector2Int(-1,  1),
-        new Vector2Int( 1, -1),
-        new Vector2Int( 1,  1)
-    };
-
     protected override void Start()
     {
-        sr = GetComponentInChildren<SpriteRenderer>();
-        if (sr) baseColor = sr.color;
-
+        RefreshHopSpeed();
         base.Start();
+    }
+
+    public void RefreshHopSpeed()
+    {
+        if (root && cellTime > 0f)
+            root.SetFloat("HopSpeed", 0.3f / cellTime);
     }
 
     protected override IEnumerator Brain()
     {
         while (true)
         {
+            // Rest before deciding where to move.
             yield return new WaitForSeconds(rest);
 
-            if (player.IsDead) yield break;
+            if (player.IsDead)
+                yield break;
 
-            Vector2Int dir = PickDirection();
+            Vector2Int direction = PickDirection();
 
-            if (dir == Vector2Int.zero)
+            if (direction == Vector2Int.zero)
                 continue;
 
-            if (sr) sr.color = Color.red;
+            // Telegraph the committed direction.
+            Color originalColor = sprite ? sprite.color : Color.white;
+
+            if (sprite)
+                sprite.color = Color.red;
 
             yield return new WaitForSeconds(windup);
 
-            if (sr) sr.color = baseColor;
+            if (sprite)
+                sprite.color = originalColor;
 
+            // Move one square at a time.
             for (int i = 0; i < range; i++)
             {
-                Vector2Int next = cell + dir;
+                Vector2Int next = cell + direction;
 
                 if (!CanEnter(next))
                     break;
@@ -57,39 +59,28 @@ public class BishopMovement : EnemyMovement
                 yield return Move(next, cellTime);
 
                 if (player.Cell == cell)
+                {
                     player.TakeHit();
+                    break;
+                }
+
+                if (player.IsDead)
+                    yield break;
             }
         }
     }
 
     private Vector2Int PickDirection()
     {
-        List<Vector2Int> closing = new List<Vector2Int>();
+        Vector2Int difference = player.Cell - cell;
 
-        Vector2Int toPlayer = player.Cell - cell;
+        if (difference == Vector2Int.zero)
+            return Vector2Int.zero;
 
-        foreach (var d in Dirs)
-        {
-            if (!CanEnter(cell + d))
-                continue;
+        // Bishops always move diagonally.
+        int dx = (int)Mathf.Sign(difference.x);
+        int dy = (int)Mathf.Sign(difference.y);
 
-            // Is the player somewhere along this diagonal?
-            for (int i = 1; i <= range; i++)
-            {
-                if (cell + d * i == player.Cell)
-                    return d;
-            }
-
-            // Does this direction reduce our distance?
-            if (toPlayer.x * d.x > 0 &&
-                toPlayer.y * d.y > 0)
-            {
-                closing.Add(d);
-            }
-        }
-
-        return closing.Count > 0
-            ? closing[Random.Range(0, closing.Count)]
-            : Vector2Int.zero;
+        return new Vector2Int(dx, dy);
     }
 }
