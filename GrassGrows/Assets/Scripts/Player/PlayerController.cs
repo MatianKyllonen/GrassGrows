@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public interface IDamageable
 {
@@ -40,6 +41,9 @@ public class PlayerController : MonoBehaviour
 
     [Header("Dash Flash")]
     public float readyPulseSpeed = 5f;
+
+    [Header("Dash Cooldown UI")]
+    public Image dashCooldownImage;
 
     [Range(0f, 1f)]
     public float minFlashOpacity = 0.2f;
@@ -265,6 +269,8 @@ public class PlayerController : MonoBehaviour
         dashCooldownLeft -= Time.deltaTime;
         stepCooldownLeft -= Time.deltaTime;
         attackBufferLeft -= Time.deltaTime;
+
+        UpdateDashCooldownUI();
 
         // Read movement input
         Vector2 raw = moveAction.ReadValue<Vector2>();
@@ -892,6 +898,21 @@ public class PlayerController : MonoBehaviour
 
         if (sprite)
             sprite.enabled = true;
+    }
+
+    private void UpdateDashCooldownUI()
+    {
+        if (!dashCooldownImage) return;
+
+        bool onCooldown = dashCooldownLeft > 0f;
+
+        dashCooldownImage.transform.parent.gameObject.SetActive(onCooldown);
+
+        if (!onCooldown) return;
+
+        float progress = 1f - (dashCooldownLeft / dashCooldown);
+
+        dashCooldownImage.fillAmount = Mathf.Clamp01(progress);
     }
 
     private void Die()
