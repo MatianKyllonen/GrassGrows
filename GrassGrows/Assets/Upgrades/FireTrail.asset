@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80d5530402a2e5a4da304fc4c976be30, type: 3}
+  m_Name: FireTrail
+  m_EditorClassIdentifier: Assembly-CSharp::FireTrailUpgrade
+  title: Fire Trail
+  description: 
+  icon: {fileID: -2126905874, guid: 34ab699baba503240969ae62078b3625, type: 3}
+  maxStacks: 5
+  firePrefab: {fileID: 237527657066440124, guid: 64e0749af0e06134ebcf25109d78e379, type: 3}
+  baseDuration: 3
+  durationPerStack: 1
+  baseDamage: 8

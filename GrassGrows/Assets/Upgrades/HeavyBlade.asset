@@ -17,4 +17,4 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 4d8ebc881590b4f4aa7edab0068335d3, type: 3}
   maxStacks: 10
   stat: 2
-  amount: 10
+  amount: 5

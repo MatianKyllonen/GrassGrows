@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fa32608422402d4692f9d3748eb4a1d, type: 3}
+  m_Name: AttackKnockBack
+  m_EditorClassIdentifier: Assembly-CSharp::AttackKnockbackUpgrade
+  title: Heavy Blow
+  description: Your attacks knockback enemies
+  icon: {fileID: -177828349, guid: 155b3034adbec204a90592fbb95b1b11, type: 3}
+  maxStacks: 3
+  baseDistance: 1
+  distancePerStack: 1

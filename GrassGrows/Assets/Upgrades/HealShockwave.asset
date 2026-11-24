@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 399fa0f636ff19a44a10da69ec936cd6, type: 3}
+  m_Name: HealShockwave
+  m_EditorClassIdentifier: Assembly-CSharp::HealShockwaveUpgrade
+  title: Heal Shockwave
+  description: 'After healing push nearby enemies away
+
+'
+  icon: {fileID: -1617412669, guid: 72bd8ccf5f390f04ea64df0336e05068, type: 3}
+  maxStacks: 3
+  baseRadius: 2
+  radiusPerStack: 1
+  baseDistance: 1
+  distancePerStack: 1

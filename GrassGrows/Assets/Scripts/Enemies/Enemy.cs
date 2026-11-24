@@ -9,6 +9,8 @@ public class Enemy : MonoBehaviour, IDamageable
     public int maxHealth = 1;
     public int xpValue = 10;
 
+    public bool IsDead => health <= 0;
+
     public UnityEvent onHit;
     public UnityEvent onDeath;
 

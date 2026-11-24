@@ -33,40 +33,21 @@ public class RookMovement : EnemyMovement
                 yield break;
 
             Vector2Int direction = PickDirection();
-
             if (direction == Vector2Int.zero)
                 continue;
 
-            // Telegraph the committed direction.
+            // Commit: direction AND distance are locked in now
+            int steps = PlanSteps(direction, range);
+            if (steps == 0)
+                continue;
+
+            // Telegraph the committed move.
             Color originalColor = sprite ? sprite.color : Color.white;
-
-            if (sprite)
-                sprite.color = Color.red;
-
+            if (sprite) sprite.color = Color.red;
             yield return new WaitForSeconds(windup);
+            if (sprite) sprite.color = originalColor;
 
-            if (sprite)
-                sprite.color = originalColor;
-
-            // Move one square at a time.
-            for (int i = 0; i < range; i++)
-            {
-                Vector2Int next = cell + direction;
-
-                if (!CanEnter(next))
-                    break;
-
-                yield return Move(next, cellTime);
-
-                if (player.Cell == cell)
-                {
-                    player.TakeHit();
-                    break;
-                }
-
-                if (player.IsDead)
-                    yield break;
-            }
+            yield return Charge(direction, steps, cellTime);
         }
     }
 

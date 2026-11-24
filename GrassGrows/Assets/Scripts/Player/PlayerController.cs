@@ -72,6 +72,19 @@ public class PlayerController : MonoBehaviour
     [Header("Heal")]
     public float healHoldTime = 1f;
     public int healAmount = 1;
+    public GameObject healEffectPrefab;
+
+    [Header("Knockback")]
+    public int attackKnockback = 0;         // squares an attack pushes enemies. 0 = off
+    public int healKnockbackDistance = 0;   // squares the heal shockwave pushes. 0 = off
+    public int healKnockbackRadius = 0;     // shockwave reach in squares around the player
+
+    [Tooltip("Cooldown after each completed heal")]
+    public float healActionCooldown = 0.1f;
+
+    private float healActionCooldownLeft;
+
+    public bool IsHealing => isHealing;
 
     [Range(0f, 1f)]
     public float healXpCostFraction = 0.25f;
@@ -83,7 +96,6 @@ public class PlayerController : MonoBehaviour
 
     private InputAction healAction;
     private bool isHealing;
-    private bool healLatch;
     private float healHeld;
 
     [Tooltip("Contact radius as a fraction of cell size")]
@@ -182,10 +194,8 @@ public class PlayerController : MonoBehaviour
         if (!sprite)
             sprite = GetComponentInChildren<SpriteRenderer>();
 
-        // Initialize shader property block
         flashProperties = new MaterialPropertyBlock();
 
-        // Make sure flash starts disabled
         ResetFlash();
     }
 
@@ -248,6 +258,8 @@ public class PlayerController : MonoBehaviour
         if (IsDead) return;
 
         invincibleLeft -= Time.deltaTime;
+        healActionCooldownLeft -= Time.deltaTime;
+
         CheckContact();
 
         dashCooldownLeft -= Time.deltaTime;
@@ -320,12 +332,15 @@ public class PlayerController : MonoBehaviour
 
         // ---- Heal ----
 
-        if (!healAction.IsPressed())
-            healLatch = false;
-
         if (isHealing)
         {
-            playerAnimator.SetBool("isHealing", true);
+            if (playerAnimator)
+                playerAnimator.SetBool("isHealing", true);
+
+            // Clear buffered actions while healing.
+            attackBufferLeft = 0f;
+            dashBufferLeft = 0f;
+            dashQueued = false;
 
             if (!healAction.IsPressed() || !CanHeal())
             {
@@ -333,6 +348,11 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
+                // Wait before starting the next heal charge.
+                if (healActionCooldownLeft > 0f)
+                    return;
+
+                // Every heal requires a fresh full charge.
                 healHeld += Time.deltaTime;
 
                 if (healHeld >= healHoldTime)
@@ -341,14 +361,31 @@ public class PlayerController : MonoBehaviour
                 return;
             }
         }
-        else if (!isCharging &&
-                 !healLatch &&
-                 healAction.IsPressed() &&
-                 CanHeal())
+        else if (!isCharging && healAction.IsPressed() && CanHeal())
         {
+            // Don't start a heal during the post-heal cooldown.
+            if (healActionCooldownLeft > 0f)
+                return;
+
             isHealing = true;
             healHeld = 0f;
+
             attackBufferLeft = 0f;
+            dashBufferLeft = 0f;
+            dashQueued = false;
+
+            return;
+        }
+        // ---- Post-heal action cooldown ----
+
+        // Prevent movement, attacking and dashing
+        // until the cooldown has completely finished.
+        if (healActionCooldownLeft > 0f)
+        {
+            attackBufferLeft = 0f;
+            dashBufferLeft = 0f;
+            dashQueued = false;
+
             return;
         }
 
@@ -433,6 +470,11 @@ public class PlayerController : MonoBehaviour
         {
             AudioManager.Instance.PlaySound(healSFX, 1f);
 
+            if (healEffectPrefab)
+            {
+                Instantiate(healEffectPrefab, transform.position, Quaternion.identity);
+            }
+
             Health = Mathf.Min(
                 maxHealth,
                 Health + healAmount
@@ -440,18 +482,57 @@ public class PlayerController : MonoBehaviour
 
             onHealthChanged?.Invoke(Health, maxHealth);
             onHealed?.Invoke();
-        }
+            HealShockwave();
 
-        healLatch = true;
-        CancelHeal();
+            // Start a fresh charge for the next heal.
+            healHeld = 0f;
+
+            // Briefly lock all player actions.
+            healActionCooldownLeft = healActionCooldown;
+
+            // Stop if no more healing is possible.
+            if (!CanHeal())
+                CancelHeal();
+        }
+        else
+        {
+            CancelHeal();
+        }
     }
 
     private void CancelHeal()
     {
-        playerAnimator.SetBool("isHealing", false);
+        if (playerAnimator)
+            playerAnimator.SetBool("isHealing", false);
 
         isHealing = false;
         healHeld = 0f;
+    }
+
+    private void HealShockwave()
+    {
+        if (healKnockbackDistance <= 0 || healKnockbackRadius <= 0) return;
+
+        // Square area around the player, so diagonals are covered too
+        Vector2 size = Vector2.one * (healKnockbackRadius * 2 + 1) * board.cellSize;
+        var hits = Physics2D.OverlapBoxAll(transform.position, size, 0f, enemyMask);
+
+        var pushed = new HashSet<GameObject>();
+        foreach (var h in hits)
+        {
+            if (!pushed.Add(h.gameObject)) continue;
+            if (!h.TryGetComponent<IKnockbackable>(out var k)) continue;
+
+            // Push straight away from the player along the longer axis
+            Vector2Int delta = board.WorldToCell(h.transform.position) - Cell;
+            if (delta == Vector2Int.zero) delta = new Vector2Int(facingX, 0);
+
+            Vector2Int dir = Mathf.Abs(delta.x) >= Mathf.Abs(delta.y)
+                ? new Vector2Int((int)Mathf.Sign(delta.x), 0)
+                : new Vector2Int(0, (int)Mathf.Sign(delta.y));
+
+            k.Knockback(dir, healKnockbackDistance);
+        }
     }
 
     // ---------- Attack ----------
@@ -475,14 +556,7 @@ public class PlayerController : MonoBehaviour
 
         if (attackEffectPrefab)
         {
-            Instantiate(
-                attackEffectPrefab,
-                board.CellToWorld(
-                    target,
-                    transform.position.z
-                ),
-                Quaternion.identity
-            );
+            Instantiate(attackEffectPrefab, board.CellToWorld(target, transform.position.z), Quaternion.identity);
         }
 
         var alreadyHit = new HashSet<Collider2D>();
@@ -524,6 +598,13 @@ public class PlayerController : MonoBehaviour
                 h.TryGetComponent<IDamageable>(out var d))
             {
                 d.Hit(transform.position, attackDamage);
+
+                // Push along the swing direction (facing is locked during an attack)
+                if (attackKnockback > 0 &&
+                    h.TryGetComponent<IKnockbackable>(out var k))
+                {
+                    k.Knockback(new Vector2Int(facingX, 0), attackKnockback);
+                }
             }
         }
     }
@@ -543,14 +624,12 @@ public class PlayerController : MonoBehaviour
     {
         if (!sprite) return;
 
-        // Don't flash until fully charged
         if (chargeHeld < dashChargeTime)
         {
             ResetFlash();
             return;
         }
 
-        // Pulse between minimum and maximum flash
         float flashAmount = Mathf.Lerp(
             minFlashOpacity,
             maxFlashOpacity,
@@ -570,7 +649,6 @@ public class PlayerController : MonoBehaviour
         sprite.SetPropertyBlock(flashProperties);
     }
 
-    // Reset the shader flash
     private void ResetFlash()
     {
         if (!sprite || flashProperties == null)
@@ -591,7 +669,6 @@ public class PlayerController : MonoBehaviour
         isCharging = false;
         chargeHeld = 0f;
 
-        // Reset white flash
         ResetFlash();
 
         if (playerAnimator)
@@ -686,7 +763,6 @@ public class PlayerController : MonoBehaviour
         Vector2Int from = Cell;
         Cell = target;
 
-        // Only normal movement plays Hop
         if (!dash)
         {
             root.ResetTrigger("HopEnd");

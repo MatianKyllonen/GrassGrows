@@ -2095,6 +2095,9 @@ MonoBehaviour:
   - prefab: {fileID: 5471314403311646601, guid: 53627865ad141954fb35925525d54722, type: 3}
     weight: 2
     unlockTime: 15
+  - prefab: {fileID: 5471314403311646601, guid: e4489676597e86f41b31e71e315f7983, type: 3}
+    weight: 1
+    unlockTime: 120
   - prefab: {fileID: 2774027085464110381, guid: 399f262e37a5d0a418fe78b99221454f, type: 3}
     weight: 4
     unlockTime: 10
@@ -7279,7 +7282,7 @@ MonoBehaviour:
     rid: 8289723377008771232
   m_FalloffIntensity: 0.5
   m_Color: {r: 0.9450981, g: 0.3921569, b: 0.121568635, a: 1}
-  m_Intensity: 10
+  m_Intensity: 5
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
   m_ApplyToSortingLayers: 00000000i
@@ -7305,8 +7308,8 @@ MonoBehaviour:
     m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
-  m_PointLightInnerRadius: 5
-  m_PointLightOuterRadius: 25
+  m_PointLightInnerRadius: 0
+  m_PointLightOuterRadius: 35
   m_ShapeLightParametricSides: 5
   m_ShapeLightParametricAngleOffset: 0
   m_ShapeLightParametricRadius: 1
@@ -7343,7 +7346,7 @@ Transform:
   m_GameObject: {fileID: 456424866}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.92387927, w: 0.38268423}
-  m_LocalPosition: {x: 13, y: 13, z: 0}
+  m_LocalPosition: {x: 16, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8589,10 +8592,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SmoothCamera2D
   target: {fileID: 534374035}
+  player: {fileID: 534374033}
   dampTime: 0.12
   useBounds: 1
   boundsMin: {x: -17, y: -17}
   boundsMax: {x: 15, y: 15}
+  volume: {fileID: 50122006}
+  hitFlashDuration: 0.35
+  hitChromaticIntensity: 1
+  hitVignetteBoost: 0.5
+  healVignetteIntensity: 0.45
+  healVignetteSmoothness: 0.2
+  vignetteReturnSpeed: 2.5
 --- !u!114 &519420034
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10468,7 +10479,7 @@ MonoBehaviour:
     rid: 8289723242508976146
   m_FalloffIntensity: 0.5
   m_Color: {r: 0.25882354, g: 0.7490196, b: 0.909804, a: 1}
-  m_Intensity: 0.6
+  m_Intensity: 0.8
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
   m_ApplyToSortingLayers: 00000000i
@@ -15340,7 +15351,7 @@ MonoBehaviour:
   cloudSprites:
   - {fileID: 21300000, guid: 483e3c84052fac240b891ca3b2bd35e5, type: 3}
   - {fileID: 21300000, guid: 82f38c337002de74896cb189857b7129, type: 3}
-  spawnInterval: 5
+  spawnInterval: 3.5
   spawnArea: {x: 50, y: 20}
   sizeRange: {x: 1, y: 2}
   speedRange: {x: 1, y: 3}
@@ -20651,6 +20662,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f76e800818bd19b4b9f5d24c572bb40c, type: 2}
   - {fileID: 11400000, guid: fbaa677bb9ec1784995d12013a3965c6, type: 2}
   - {fileID: 11400000, guid: 4bb5554bbec46ea42a1db685e459732b, type: 2}
+  - {fileID: 11400000, guid: d541d6443ea37f54c8ed00e81e69d9c6, type: 2}
+  - {fileID: 11400000, guid: d92af4bf30a0304488d033de3d07c1e7, type: 2}
+  - {fileID: 11400000, guid: 54b2c314012d6e347bee45e087caecbb, type: 2}
   selectionUI: {fileID: 2099007316}
   cardUIAnimator: {fileID: 1351643157}
   levelUpSFX: {fileID: 8300000, guid: 9d63e294b5a23c7449fd652f51658535, type: 3}
@@ -21710,7 +21724,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1351643153
 RectTransform:
   m_ObjectHideFlags: 0
@@ -30273,8 +30287,8 @@ ParticleSystem:
     startLifetime:
       serializedVersion: 3
       minMaxState: 3
-      scalar: 9
-      minScalar: 7
+      scalar: 15
+      minScalar: 13
       maxCurve:
         serializedVersion: 2
         m_Curve: []
@@ -30290,7 +30304,7 @@ ParticleSystem:
     startSpeed:
       serializedVersion: 3
       minMaxState: 0
-      scalar: 5
+      scalar: 2
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -30631,7 +30645,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 3
       minMaxState: 0
-      scalar: 25
+      scalar: 2
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -36957,9 +36971,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 816545880}
     - target: {fileID: 1535643182109849191, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
+      propertyPath: onHit.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1535643182109849191, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
       propertyPath: onHit.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 815911962}
+    - target: {fileID: 1535643182109849191, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
+      propertyPath: onHit.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      value: 
+      objectReference: {fileID: 519420028}
+    - target: {fileID: 1535643182109849191, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
+      propertyPath: onHit.m_PersistentCalls.m_Calls.Array.data[1].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 1535643182109849191, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
       propertyPath: onHealthChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -36967,18 +36993,6 @@ PrefabInstance:
     - target: {fileID: 1539525379478394494, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
       propertyPath: m_Name
       value: Player
-      objectReference: {fileID: 0}
-    - target: {fileID: 2031106267189693864, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
-      propertyPath: m_Color.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2031106267189693864, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
-      propertyPath: m_Color.g
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2031106267189693864, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
-      propertyPath: m_Color.r
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3495402162905482254, guid: 5a49197a814e29c41b59902501398b7f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -37088,15 +37102,15 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 2099007315}
-  - {fileID: 972778306}
+  - {fileID: 129465716}
+  - {fileID: 1306912078}
   - {fileID: 456424868}
   - {fileID: 619394802}
   - {fileID: 7276209065409810398}
   - {fileID: 816545881}
   - {fileID: 50122007}
   - {fileID: 1854718376}
-  - {fileID: 129465716}
-  - {fileID: 1306912078}
+  - {fileID: 972778306}
   - {fileID: 261895755}
   - {fileID: 2057042528}
   - {fileID: 2092633125}

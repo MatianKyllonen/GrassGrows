@@ -168,6 +168,8 @@ MonoBehaviour:
   blinkInterval: 0.08
   healHoldTime: 1
   healAmount: 1
+  healEffectPrefab: {fileID: 6308141023330868754, guid: 44c8487baa1e5254e8701fc9b8caf282, type: 3}
+  healActionCooldown: 0.4
   healXpCostFraction: 0.25
   onHealed:
     m_PersistentCalls:

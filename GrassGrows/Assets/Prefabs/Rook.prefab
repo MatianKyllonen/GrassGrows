@@ -226,7 +226,8 @@ MonoBehaviour:
     m_Bits: 128
   root: {fileID: 6391278837111131097}
   forward: {x: -1, y: 0}
-  range: 5
+  forceFullRange: 0
+  range: 8
   rest: 1.4
   windup: 0.6
   cellTime: 0.45
