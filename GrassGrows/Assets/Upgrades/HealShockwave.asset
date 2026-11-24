@@ -17,7 +17,7 @@ MonoBehaviour:
 
 '
   icon: {fileID: -1617412669, guid: 72bd8ccf5f390f04ea64df0336e05068, type: 3}
-  maxStacks: 3
+  maxStacks: 1
   baseRadius: 2
   radiusPerStack: 1
   baseDistance: 1
