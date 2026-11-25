@@ -31,6 +31,8 @@ public abstract class EnemyMovement : MonoBehaviour, IKnockbackable
     [Tooltip("Subtracted from incoming knockback distance. Use for heavy pieces.")]
     public int knockbackResistance = 0;
 
+    private bool hasEnteredBoard;
+
     private Enemy enemy;
     private Color baseColor = Color.white;
 
@@ -98,22 +100,45 @@ public abstract class EnemyMovement : MonoBehaviour, IKnockbackable
         sprite = GetComponentInChildren<SpriteRenderer>();
 
         cell = board.WorldToCell(transform.position);
+        hasEnteredBoard = IsInsideBoard(cell);
         transform.position = board.CellToWorld(cell, transform.position.z);
         StartCoroutine(Brain());
+    }
+
+    protected bool IsInsideBoard(Vector2Int c)
+    {
+        return c.x >= 0 && c.x < board.size.x &&
+               c.y >= 0 && c.y < board.size.y;
     }
 
     protected abstract IEnumerator Brain();
 
     protected bool CanEnter(Vector2Int c)
     {
-        if (board.IsBlocked(c)) return false;
+        bool insideBoard = IsInsideBoard(c);
 
-        // Squares claimed by other enemies, including ones still mid-hop toward it
+        // Enemies that have entered the board cannot leave it.
+        if (hasEnteredBoard && !insideBoard)
+            return false;
+
+        // Outside cells are allowed before entering the board.
+        if (insideBoard && board.IsBlocked(c))
+            return false;
+
+        // Check squares claimed by other enemies.
         foreach (var e in all)
-            if (e != this && e.cell == c) return false;
+        {
+            if (e != this && e.cell == c)
+                return false;
+        }
 
+        // Check physical enemy colliders.
         foreach (var h in Physics2D.OverlapPointAll(board.CellToWorld(c), enemyMask))
-            if (h.gameObject != gameObject) return false;
+        {
+            if (h.gameObject != gameObject)
+                return false;
+        }
+
         return true;
     }
 
@@ -159,8 +184,11 @@ public abstract class EnemyMovement : MonoBehaviour, IKnockbackable
     {
         Vector3 start = transform.position;
         Vector3 end = board.CellToWorld(target, start.z);
-        cell = target;   // claim the square immediately
 
+        cell = target;
+
+        if (IsInsideBoard(cell))
+            hasEnteredBoard = true;
         for (float t = 0f; t < 1f; t += Time.deltaTime / knockbackTime)
         {
             float e = 1f - (1f - t) * (1f - t);   // ease-out
@@ -181,7 +209,11 @@ public abstract class EnemyMovement : MonoBehaviour, IKnockbackable
 
         Vector3 start = transform.position;
         Vector3 end = board.CellToWorld(target, start.z);
+
         cell = target;
+
+        if (IsInsideBoard(cell))
+            hasEnteredBoard = true;
 
         root.SetTrigger("Hop");
 

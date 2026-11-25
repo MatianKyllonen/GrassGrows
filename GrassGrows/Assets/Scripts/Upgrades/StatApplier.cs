@@ -25,7 +25,7 @@ public static class StatApplier
                 p.dashCooldown = Mathf.Clamp(p.dashCooldown * cut, 0f, 3f);
                 break;
             case Stat.StepSpeed:
-                p.stepTime = Mathf.Clamp(p.stepTime * cut, 0.06f, 0.4f);
+                p.stepTime = Mathf.Max(0.06f, p.stepTime * cut);
                 p.RefreshHopSpeed();
                 break;
             case Stat.AttackSpeed:

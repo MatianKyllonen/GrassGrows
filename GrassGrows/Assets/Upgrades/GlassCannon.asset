@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 2ceaa01e073b5ba42b1db737052345e9, type: 3}
   m_Name: GlassCannon
   m_EditorClassIdentifier: Assembly-CSharp::TradeoffUpgrade
   title: Glass Cannon
@@ -22,5 +22,5 @@ MonoBehaviour:
   - stat: 2
     amount: 10
   - stat: 1
-    amount: 10
+    amount: 15
   autoDescription: 1

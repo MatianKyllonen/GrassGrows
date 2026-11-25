@@ -14,7 +14,7 @@ public class TradeoffUpgrade : Upgrade
 {
     public StatChange[] changes;
 
-    [Tooltip("Builds the card text from the changes, green for buffs and red for drawbacks. Turn off to use the Description field instead.")]
+    [Tooltip("Builds the card text from the changes, aa green for buffs and red for drawbacks. Turn off to use the Description field instead.")]
     public bool autoDescription = true;
 
     public override void Apply(PlayerController p, int stack)

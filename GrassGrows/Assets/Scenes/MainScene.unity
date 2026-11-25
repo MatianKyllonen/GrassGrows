@@ -2091,25 +2091,25 @@ MonoBehaviour:
     unlockTime: 0
   - prefab: {fileID: 5471314403311646601, guid: 22b53151827105d4298bb0253a9c5634, type: 3}
     weight: 7
-    unlockTime: 45
+    unlockTime: 60
   - prefab: {fileID: 5471314403311646601, guid: 53627865ad141954fb35925525d54722, type: 3}
     weight: 8
-    unlockTime: 15
+    unlockTime: 10
   - prefab: {fileID: 5471314403311646601, guid: 7ca6878a6f078674880c9cd67d0956c3, type: 3}
     weight: 8
-    unlockTime: 60
+    unlockTime: 30
   - prefab: {fileID: 5471314403311646601, guid: e4489676597e86f41b31e71e315f7983, type: 3}
     weight: 6
     unlockTime: 120
   - prefab: {fileID: 2774027085464110381, guid: 399f262e37a5d0a418fe78b99221454f, type: 3}
     weight: 9
-    unlockTime: 10
+    unlockTime: 60
   - prefab: {fileID: 5471314403311646601, guid: 4e6a20f9b1af17d479bc84fdc2e8abfe, type: 3}
     weight: 6
-    unlockTime: 30
+    unlockTime: 75
   - prefab: {fileID: 5471314403311646601, guid: 36e5502755254d24395176d06522f428, type: 3}
     weight: 7
-    unlockTime: 60
+    unlockTime: 90
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
@@ -20690,9 +20690,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d541d6443ea37f54c8ed00e81e69d9c6, type: 2}
   - {fileID: 11400000, guid: d92af4bf30a0304488d033de3d07c1e7, type: 2}
   - {fileID: 11400000, guid: 54b2c314012d6e347bee45e087caecbb, type: 2}
-  - {fileID: 11400000, guid: 5a00cf1117b218d4a9d143df2c42bce2, type: 2}
   - {fileID: 11400000, guid: aa1877e45ef8ec44cacaef99c07bbd3b, type: 2}
-  - {fileID: 11400000, guid: b1bbb422dfefacc4b9b343d5e70a0896, type: 2}
+  - {fileID: 11400000, guid: 5a00cf1117b218d4a9d143df2c42bce2, type: 2}
+  - {fileID: 11400000, guid: 09b8aee319518224fa6b63c9d044e4d4, type: 2}
   selectionUI: {fileID: 2099007316}
   cardUIAnimator: {fileID: 1351643157}
   levelUpSFX: {fileID: 8300000, guid: 9d63e294b5a23c7449fd652f51658535, type: 3}

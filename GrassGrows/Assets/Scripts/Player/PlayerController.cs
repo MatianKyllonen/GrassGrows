@@ -479,7 +479,8 @@ public class PlayerController : MonoBehaviour
 
             if (healEffectPrefab)
             {
-                Instantiate(healEffectPrefab, transform.position, Quaternion.identity);
+                GameObject effect = Instantiate(healEffectPrefab, transform.position, Quaternion.identity);
+                Destroy(effect, 1.5f);
             }
 
             Health = Mathf.Min(
@@ -603,7 +604,8 @@ public class PlayerController : MonoBehaviour
 
                 if (attackEffectPrefab)
                 {
-                    Instantiate(attackEffectPrefab, h.gameObject.transform.position, Quaternion.identity);
+                    GameObject effect = Instantiate(attackEffectPrefab, h.gameObject.transform.position, Quaternion.identity);
+                    Destroy(effect, 1f);
                 }
 
                 // Push along the swing direction (facing is locked during an attack)

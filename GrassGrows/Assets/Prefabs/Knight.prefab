@@ -103,8 +103,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc61def22b4d8e848aaf799ed1ed0e38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
-  maxHealth: 45
-  xpValue: 50
+  maxHealth: 35
+  xpValue: 35
   onHit:
     m_PersistentCalls:
       m_Calls: []
