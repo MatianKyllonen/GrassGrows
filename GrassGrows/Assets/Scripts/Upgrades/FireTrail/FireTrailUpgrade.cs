@@ -14,7 +14,7 @@ public class FireTrailUpgrade : Upgrade
         if (!fx) fx = p.gameObject.AddComponent<FireTrailEffect>();
 
         float duration = baseDuration + (stack - 1) * durationPerStack;
-        int damage = baseDamage + (stack - 1) * 5;   // +1 damage every 2 stacks
+        int damage = baseDamage + (stack - 1) * 3;
         fx.Configure(firePrefab, duration, damage);
     }
 }
