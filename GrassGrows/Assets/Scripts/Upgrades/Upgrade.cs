@@ -7,6 +7,8 @@ public abstract class Upgrade : ScriptableObject
     public Sprite icon;
     [Tooltip("How many times this card can be picked")]
     public int maxStacks = 5;
+    // Cards read their text from here, so subclasses can build it automatically
+    public virtual string GetDescription() => description;
 
     // stack = how many times it has been picked, including this one (1, 2, 3...)
     public abstract void Apply(PlayerController player, int stack);

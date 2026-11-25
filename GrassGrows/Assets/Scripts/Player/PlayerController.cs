@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Unity.VisualScripting;
 
 public interface IDamageable
 {
@@ -560,10 +561,6 @@ public class PlayerController : MonoBehaviour
 
         yield return new WaitForSeconds(attackStartup);
 
-        if (attackEffectPrefab)
-        {
-            Instantiate(attackEffectPrefab, board.CellToWorld(target, transform.position.z), Quaternion.identity);
-        }
 
         var alreadyHit = new HashSet<Collider2D>();
 
@@ -600,10 +597,14 @@ public class PlayerController : MonoBehaviour
 
         foreach (var h in hits)
         {
-            if (alreadyHit.Add(h) &&
-                h.TryGetComponent<IDamageable>(out var d))
+            if (alreadyHit.Add(h) && h.TryGetComponent<IDamageable>(out var d))
             {
                 d.Hit(transform.position, attackDamage);
+
+                if (attackEffectPrefab)
+                {
+                    Instantiate(attackEffectPrefab, h.gameObject.transform.position, Quaternion.identity);
+                }
 
                 // Push along the swing direction (facing is locked during an attack)
                 if (attackKnockback > 0 &&
@@ -836,9 +837,8 @@ public class PlayerController : MonoBehaviour
 
     public void AddMaxHealth(int amount)
     {
-        maxHealth += amount;
-        Health += amount;
-
+        maxHealth = Mathf.Max(1, maxHealth + amount);
+        Health = Mathf.Clamp(Health + amount, 1, maxHealth);   // a penalty never drops you below 1
         onHealthChanged?.Invoke(Health, maxHealth);
     }
 

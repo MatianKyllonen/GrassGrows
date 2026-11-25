@@ -17,6 +17,6 @@ MonoBehaviour:
   icon: {fileID: -2126905874, guid: 34ab699baba503240969ae62078b3625, type: 3}
   maxStacks: 5
   firePrefab: {fileID: 237527657066440124, guid: 64e0749af0e06134ebcf25109d78e379, type: 3}
-  baseDuration: 3
-  durationPerStack: 1
+  baseDuration: 2
+  durationPerStack: 0.5
   baseDamage: 8

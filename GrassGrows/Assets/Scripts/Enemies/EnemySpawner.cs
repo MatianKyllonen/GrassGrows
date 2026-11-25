@@ -101,20 +101,26 @@ public class EnemySpawner : MonoBehaviour
         GameObject prefab = PickPrefab();
         if (!prefab) return;
 
-        // Every cell in the ring one square outside the board.
+        // Every cell in the ring two squares outside the board.
         var ring = new List<Vector2Int>();
 
         for (int x = 0; x < board.size.x; x++)
         {
-            ring.Add(new Vector2Int(x, -1));
-            ring.Add(new Vector2Int(x, board.size.y));
+            ring.Add(new Vector2Int(x, -2));
+            ring.Add(new Vector2Int(x, board.size.y + 1));
         }
 
         for (int y = 0; y < board.size.y; y++)
         {
-            ring.Add(new Vector2Int(-1, y));
-            ring.Add(new Vector2Int(board.size.x, y));
+            ring.Add(new Vector2Int(-2, y));
+            ring.Add(new Vector2Int(board.size.x + 1, y));
         }
+
+        // Include the corners of the outer ring.
+        ring.Add(new Vector2Int(-2, -2));
+        ring.Add(new Vector2Int(-2, board.size.y + 1));
+        ring.Add(new Vector2Int(board.size.x + 1, -2));
+        ring.Add(new Vector2Int(board.size.x + 1, board.size.y + 1));
 
         while (ring.Count > 0)
         {

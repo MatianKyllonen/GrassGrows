@@ -105,7 +105,7 @@ public class PlayerProgression : MonoBehaviour
 
         choosing = true;
         Time.timeScale = 0f;
-        selectionUI.Show(picks, Choose);
+        selectionUI.Show(picks, Stacks, Choose);
     }
 
     public int CostFromFraction(float fraction) => Mathf.CeilToInt(XpToNext * fraction);

@@ -15,17 +15,20 @@ public class UpgradeSelectionUI : MonoBehaviour
         public TMP_Text title;
         public TMP_Text description;
         public Image icon;
+        public TMP_Text stacks;
     }
 
     public GameObject panel;
     public Card[] cards;   // 3 cards
+    [Tooltip("On: shows the level you'd reach by picking (a new card reads 1/3). Off: shows how many you own now (0/3).")]
+    public bool showNextStack = true;
 
     private List<Upgrade> current = new List<Upgrade>();
     private Action<Upgrade> onPick;
 
     private void Awake() => panel.SetActive(false);
 
-    public void Show(List<Upgrade> options, Action<Upgrade> pick)
+    public void Show(List<Upgrade> options, Func<Upgrade, int> getStacks, Action<Upgrade> pick)
     {
         current = options;
         onPick = pick;
@@ -39,7 +42,14 @@ public class UpgradeSelectionUI : MonoBehaviour
 
             var u = options[i];
             cards[i].title.text = u.title;
-            cards[i].description.text = u.description;
+            cards[i].description.text = u.GetDescription();
+
+            if (cards[i].stacks)
+            {
+                int shown = getStacks(u) + (showNextStack ? 1 : 0);
+                cards[i].stacks.text = $"{shown}/{u.maxStacks}";
+            }
+
             if (cards[i].icon) { cards[i].icon.sprite = u.icon; cards[i].icon.enabled = u.icon != null; }
 
             int index = i;
