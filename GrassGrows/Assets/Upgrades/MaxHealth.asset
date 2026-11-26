@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgrade
   title: Max Health
   description: Increases max health by 1
-  icon: {fileID: 21300000, guid: c10d6f4158d8f0848bc9520352134591, type: 3}
+  icon: {fileID: 21300000, guid: a3be795beffef0c46ad269fab42d1bae, type: 3}
   maxStacks: 3
   stat: 0
   amount: 1

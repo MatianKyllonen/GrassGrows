@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgrade
   title: Dash Distance
   description: Increases dash distance
-  icon: {fileID: 21300000, guid: e602d44c625fb0141b283c2d3f66ed28, type: 3}
+  icon: {fileID: 21300000, guid: 181c53aebd50e204f86d0d506d90368d, type: 3}
   maxStacks: 3
   stat: 3
   amount: 1

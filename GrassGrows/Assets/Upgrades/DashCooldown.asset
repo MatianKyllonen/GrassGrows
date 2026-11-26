@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgrade
   title: Faster Reflexes
   description: You can dash more often
-  icon: {fileID: 21300000, guid: 4d8ebc881590b4f4aa7edab0068335d3, type: 3}
+  icon: {fileID: 21300000, guid: 68453b03ee70e914285ee27257798ef4, type: 3}
   maxStacks: 5
   stat: 5
   amount: 0.15

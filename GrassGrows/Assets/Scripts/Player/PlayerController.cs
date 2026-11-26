@@ -6,7 +6,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Unity.VisualScripting;
 
 public interface IDamageable
 {
@@ -31,7 +30,15 @@ public class PlayerController : MonoBehaviour
     public float dashCooldown = 0.5f;
     public int dashDamage = 1;
 
+    [Header("Dash Afterimage")]
+    [Range(0f, 1f)]
+    public float dashAfterimageOpacity = 0.25f;
+
+    public float dashAfterimageLifetime = 0.15f;
+    public float dashAfterimageInterval = 0.025f;
+
     public event System.Action<Vector2Int, Vector2Int> onDashed;
+    public event System.Action<Vector2Int> onDashCellPassed;   // fires as each square is reached
     private int lastChargeTick;
 
     public float ChargeProgress =>
@@ -629,6 +636,75 @@ public class PlayerController : MonoBehaviour
 
     // ---------- Dash charge visuals ----------
 
+    private void CreateDashAfterimage()
+    {
+        if (!sprite || !sprite.sprite)
+            return;
+
+        // Create a snapshot of the player's current sprite.
+        GameObject afterimage = new GameObject("Dash Afterimage");
+
+        afterimage.transform.position = sprite.transform.position;
+        afterimage.transform.rotation = sprite.transform.rotation;
+        afterimage.transform.localScale = sprite.transform.lossyScale;
+
+        SpriteRenderer afterimageRenderer =
+            afterimage.AddComponent<SpriteRenderer>();
+
+        // Copy the current sprite and its visual settings.
+        afterimageRenderer.sprite = sprite.sprite;
+        afterimageRenderer.flipX = sprite.flipX;
+        afterimageRenderer.flipY = sprite.flipY;
+
+        afterimageRenderer.sortingLayerID = sprite.sortingLayerID;
+        afterimageRenderer.sortingOrder = sprite.sortingOrder - 1;
+
+        afterimageRenderer.sharedMaterial = sprite.sharedMaterial;
+        afterimageRenderer.maskInteraction = sprite.maskInteraction;
+
+        afterimageRenderer.drawMode = sprite.drawMode;
+        afterimageRenderer.size = sprite.size;
+
+        Color color = sprite.color;
+        color.a *= dashAfterimageOpacity;
+        afterimageRenderer.color = color;
+
+        StartCoroutine(FadeAfterimage(
+            afterimageRenderer,
+            dashAfterimageLifetime
+        ));
+    }
+
+    private IEnumerator FadeAfterimage(
+    SpriteRenderer afterimage,
+    float duration)
+    {
+        if (duration <= 0f)
+        {
+            Destroy(afterimage.gameObject);
+            yield break;
+        }
+
+        Color startColor = afterimage.color;
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+
+            float progress = Mathf.Clamp01(timer / duration);
+
+            Color color = startColor;
+            color.a = Mathf.Lerp(startColor.a, 0f, progress);
+
+            afterimage.color = color;
+
+            yield return null;
+        }
+
+        Destroy(afterimage.gameObject);
+    }
+
     private void UpdateChargeVisual()
     {
         if (!sprite) return;
@@ -778,32 +854,64 @@ public class PlayerController : MonoBehaviour
             root.SetTrigger("Hop");
         }
 
+        // Dash bookkeeping: squares are processed as the player reaches them
+        Vector2Int dashStep = Vector2Int.zero;
+        int dashCells = 0;
+        int nextCell = 0;
+        var dashHit = new HashSet<Collider2D>();
+
         if (dash)
         {
-            Slash(start, end);
+            Vector2Int delta = target - from;
+            dashStep = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
+            dashCells = Mathf.Max(Mathf.Abs(delta.x), Mathf.Abs(delta.y));
             onDashed?.Invoke(from, target);
         }
 
-        for (
-            float t = 0f;
-            t < 1f;
-            t += Time.deltaTime / duration
-        )
+        float afterimageTimer = dashAfterimageInterval;   // start full so the first frame leaves an image
+
+        for (float t = 0f; t < 1f; t += Time.deltaTime / duration)
         {
             float e = dash
                 ? 1f - (1f - t) * (1f - t)
                 : t * t * (3f - 2f * t);
 
-            transform.position = Vector3.Lerp(
-                start,
-                end,
-                e
-            );
+            transform.position = Vector3.Lerp(start, end, e);
+
+            if (dash)
+            {
+                // Afterimages
+                afterimageTimer += Time.deltaTime;
+                if (afterimageTimer >= dashAfterimageInterval)
+                {
+                    CreateDashAfterimage();
+                    afterimageTimer = 0f;
+                }
+
+                // Per-square hits and fire, as each square is reached
+                float travelled = Vector3.Distance(start, transform.position) / board.cellSize;
+
+                while (nextCell <= dashCells &&
+                       travelled >= (nextCell == 0 ? 0.5f : nextCell))
+                {
+                    DashPassCell(from + dashStep * nextCell, dashHit);
+                    nextCell++;
+                }
+            }
 
             yield return null;
         }
 
         transform.position = end;
+
+        if (dash)
+        {
+            while (nextCell <= dashCells)
+            {
+                DashPassCell(from + dashStep * nextCell, dashHit);
+                nextCell++;
+            }
+        }
 
         if (!dash)
             root.SetTrigger("HopEnd");
@@ -816,23 +924,23 @@ public class PlayerController : MonoBehaviour
 
     // ---------- Dash attack ----------
 
-    private void Slash(Vector3 a, Vector3 b)
+    // Called the moment the dash reaches a square: damages what is there and lets upgrades react
+    private void DashPassCell(Vector2Int c, HashSet<Collider2D> alreadyHit)
     {
-        float radius = board.cellSize * 0.4f;
-
-        var hits = Physics2D.CircleCastAll(
-            a,
-            radius,
-            (b - a).normalized,
-            Vector3.Distance(a, b),
+        var hits = Physics2D.OverlapBoxAll(
+            board.CellToWorld(c),
+            Vector2.one * board.cellSize * 0.8f,
+            0f,
             enemyMask
         );
 
         foreach (var h in hits)
         {
-            if (h.collider.TryGetComponent<IDamageable>(out var d))
-                d.Hit(a, dashDamage);
+            if (alreadyHit.Add(h) && h.TryGetComponent<IDamageable>(out var d))
+                d.Hit(transform.position, dashDamage);
         }
+
+        onDashCellPassed?.Invoke(c);
     }
 
     // ---------- Health ----------
@@ -921,6 +1029,9 @@ public class PlayerController : MonoBehaviour
     {
         if (sprite)
             sprite.enabled = true;
+
+
+        playerAnimator.SetTrigger("Die");
 
         Debug.Log("Player died!");
 

@@ -11,7 +11,7 @@ public class DemoPlayer : MonoBehaviour
     public float hopClipLength = 0.3f;
 
     [Header("Dash")]
-    public int dashDistance = 2;
+    public int dashDistance = 3;
     public float dashTime = 0.12f;
     [Tooltip("Shorter than the real game so the menu stays lively")]
     public float chargeTime = 0.7f;
@@ -20,6 +20,11 @@ public class DemoPlayer : MonoBehaviour
     public float readyPulseSpeed = 5f;
     [Range(0f, 1f)] public float minFlash = 0.2f;
     [Range(0f, 1f)] public float maxFlash = 0.65f;
+
+    [Header("Dash Afterimage")]
+    [Range(0f, 1f)] public float dashAfterimageOpacity = 0.25f;
+    public float dashAfterimageLifetime = 0.15f;
+    public float dashAfterimageInterval = 0.025f;
 
     [Header("Attack")]
     public float attackStartup = 0.12f;
@@ -207,47 +212,60 @@ public class DemoPlayer : MonoBehaviour
         yield return new WaitForSeconds(attackRecovery);
     }
 
+
     private IEnumerator ChargeAndDash(Vector2Int dir)
     {
-        if (dir.x != 0) Face(dir.x);
+        if (dir.x != 0)
+            Face(dir.x);
+
         DemoAnim.Bool(playerAnimator, "Charging", true);
 
-        // Hold the charge, then pulse white briefly once it's full
         float held = 0f;
+
         while (held < chargeTime + 0.15f)
         {
             held += Time.deltaTime;
+
             if (held >= chargeTime)
-                SetFlash(Mathf.Lerp(minFlash, maxFlash, Mathf.PingPong(Time.time * readyPulseSpeed, 1f)));
+            {
+                SetFlash(Mathf.Lerp(
+                    minFlash,
+                    maxFlash,
+                    Mathf.PingPong(Time.time * readyPulseSpeed, 1f)
+                ));
+            }
+
             yield return null;
         }
 
         SetFlash(0f);
         DemoAnim.Bool(playerAnimator, "Charging", false);
 
-        // Go as far as the board allows, cutting down everything on the way
-        int reach = 0;
+        nextDashTime = Time.time + dashCooldown;
+
+        int reach = dashDistance;
+
+        // Don't dash outside the board.
         for (int i = 1; i <= dashDistance; i++)
         {
-            if (!board.InBounds(Cell + dir * i)) break;
-            reach = i;
-        }
-        if (reach == 0) yield break;
-
-        for (int i = 1; i <= reach; i++)
-        {
-            var p = board.PawnAt(Cell + dir * i);
-            if (p) p.Kill();
+            if (!board.InBounds(Cell + dir * i))
+            {
+                reach = i - 1;
+                break;
+            }
         }
 
-        nextDashTime = Time.time + dashCooldown;
-        yield return Move(Cell + dir * reach, dashTime, true);
+        if (reach > 0)
+            yield return Move(Cell + dir * reach, dashTime, true);
     }
+
 
     private IEnumerator Move(Vector2Int target, float duration, bool dash)
     {
         Vector3 a = transform.position;
         Vector3 b = board.CellToWorld(target, a.z);
+
+        Vector2Int from = Cell;
         Cell = target;
 
         if (!dash)
@@ -256,15 +274,107 @@ public class DemoPlayer : MonoBehaviour
             DemoAnim.Trigger(root, "Hop");
         }
 
+        // Dash bookkeeping: squares are processed as the player reaches them
+        Vector2Int dashStep = Vector2Int.zero;
+        int dashCells = 0;
+        int nextCell = 0;
+
+        if (dash)
+        {
+            Vector2Int delta = target - from;
+            dashStep = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
+            dashCells = Mathf.Max(Mathf.Abs(delta.x), Mathf.Abs(delta.y));
+        }
+
+        float afterimageTimer = dashAfterimageInterval;   // start full so the first frame leaves an image
+
         for (float t = 0f; t < 1f; t += Time.deltaTime / duration)
         {
             float e = dash ? 1f - (1f - t) * (1f - t) : t * t * (3f - 2f * t);
             transform.position = Vector3.Lerp(a, b, e);
+
+            if (dash)
+            {
+                afterimageTimer += Time.deltaTime;
+                if (afterimageTimer >= dashAfterimageInterval)
+                {
+                    CreateDashAfterimage();
+                    afterimageTimer = 0f;
+                }
+
+                // Cut each square's pawn only once the player has reached it
+                float travelled = Vector3.Distance(a, transform.position) / board.cellSize;
+                while (nextCell <= dashCells &&
+                       travelled >= (nextCell == 0 ? 0.5f : nextCell))
+                {
+                    DashPassCell(from + dashStep * nextCell);
+                    nextCell++;
+                }
+            }
+
             yield return null;
         }
 
         transform.position = b;
+
+        if (dash)
+        {
+            while (nextCell <= dashCells)
+            {
+                DashPassCell(from + dashStep * nextCell);
+                nextCell++;
+            }
+        }
+
         if (!dash) DemoAnim.Trigger(root, "HopEnd");
+    }
+
+    private void DashPassCell(Vector2Int c)
+    {
+        var p = board.PawnAt(c);
+        if (p) p.Kill();
+    }
+
+    private void CreateDashAfterimage()
+    {
+        if (!sprite || !sprite.sprite) return;
+
+        var go = new GameObject("Dash Afterimage");
+        go.transform.position = sprite.transform.position;
+        go.transform.rotation = sprite.transform.rotation;
+        go.transform.localScale = sprite.transform.lossyScale;
+
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite.sprite;
+        sr.flipX = sprite.flipX;
+        sr.flipY = sprite.flipY;
+        sr.sortingLayerID = sprite.sortingLayerID;
+        sr.sortingOrder = sprite.sortingOrder - 1;
+        sr.sharedMaterial = sprite.sharedMaterial;
+        sr.maskInteraction = sprite.maskInteraction;
+
+        Color c = sprite.color;
+        c.a *= dashAfterimageOpacity;
+        sr.color = c;
+
+        StartCoroutine(FadeAfterimage(sr, dashAfterimageLifetime));
+    }
+
+    private IEnumerator FadeAfterimage(SpriteRenderer sr, float duration)
+    {
+        if (duration <= 0f) { Destroy(sr.gameObject); yield break; }
+
+        Color start = sr.color;
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            if (!sr) yield break;
+            Color c = start;
+            c.a = Mathf.Lerp(start.a, 0f, t / duration);
+            sr.color = c;
+            yield return null;
+        }
+
+        if (sr) Destroy(sr.gameObject);
     }
 
     // ---------- Visuals ----------

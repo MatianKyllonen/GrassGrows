@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TradeoffUpgrade
   title: Glass Cannon
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 01ccaf521abda4943be25df6696cfcfe, type: 3}
   maxStacks: 1
   changes:
   - stat: 0
     amount: -2
   - stat: 2
-    amount: 10
+    amount: 15
   - stat: 1
     amount: 15
   autoDescription: 1

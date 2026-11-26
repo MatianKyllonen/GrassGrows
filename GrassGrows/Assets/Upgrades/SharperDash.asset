@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgrade
   title: Sharper Dash
   description: Increases dash damage
-  icon: {fileID: 21300000, guid: 4d8ebc881590b4f4aa7edab0068335d3, type: 3}
+  icon: {fileID: 21300000, guid: 3b02024558a55cc4d8d671c791c11283, type: 3}
   maxStacks: 10
   stat: 1
-  amount: 10
+  amount: 5

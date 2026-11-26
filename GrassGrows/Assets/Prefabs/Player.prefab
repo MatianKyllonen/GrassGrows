@@ -408,6 +408,9 @@ MonoBehaviour:
   dashTime: 0.12
   dashCooldown: 1.5
   dashDamage: 20
+  dashAfterimageOpacity: 0.25
+  dashAfterimageLifetime: 0.3
+  dashAfterimageInterval: 0.025
   readyPulseSpeed: 3
   dashCooldownImage: {fileID: 5973462960545807758}
   minFlashOpacity: 0
@@ -418,7 +421,7 @@ MonoBehaviour:
   attackStartup: 0.12
   attackActive: 0.06
   attackRecovery: 0.25
-  attackEffectPrefab: {fileID: 0}
+  attackEffectPrefab: {fileID: 6308141023330868754, guid: 16e1f16200eb0d746b4c07b3343aa800, type: 3}
   maxHealth: 3
   invincibilityTime: 1.2
   blinkInterval: 0.08
@@ -466,7 +469,19 @@ MonoBehaviour:
         m_CallState: 2
   onDeath:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: GameOver
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   sprite: {fileID: 2031106267189693864}
   root: {fileID: 1750465576925930424}
   playerAnimator: {fileID: 6542130110285379381}

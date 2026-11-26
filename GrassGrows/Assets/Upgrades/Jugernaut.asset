@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TradeoffUpgrade
   title: Jugernaut
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2ecaae17fb75a454a8583c2d1571805a, type: 3}
   maxStacks: 1
   changes:
   - stat: 0
