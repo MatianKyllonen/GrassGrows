@@ -266,6 +266,12 @@ public class PlayerController : MonoBehaviour
                 SceneManager.GetActiveScene().buildIndex
             );
 
+
+        if (Input.GetKeyDown(KeyCode.G))
+            Die();
+            
+
+
         if (Time.timeScale == 0f) return;
         if (IsDead) return;
 
@@ -1027,8 +1033,12 @@ public class PlayerController : MonoBehaviour
 
     private void Die()
     {
+        Health = 0;
+        dashCooldownImage.transform.parent.gameObject.SetActive(false);
+
         if (sprite)
             sprite.enabled = true;
+
 
 
         playerAnimator.SetTrigger("Die");

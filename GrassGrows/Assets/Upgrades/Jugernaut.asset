@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ceaa01e073b5ba42b1db737052345e9, type: 3}
   m_Name: Jugernaut
   m_EditorClassIdentifier: Assembly-CSharp::TradeoffUpgrade
-  title: Jugernaut
+  title: Jugernaut Helmet
   description: 
   icon: {fileID: 21300000, guid: 2ecaae17fb75a454a8583c2d1571805a, type: 3}
   maxStacks: 1

@@ -38,15 +38,20 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Maximum possible number of alive enemies")]
     public int maxAliveCap = 15;
 
+    public bool IsMidnight { get; private set; }
+
     [Header("Position")]
     [Tooltip("Enemies spawn one cell outside the board")]
+
 
     private BoardGrid board;
     private PlayerController player;
 
+
+
     private readonly List<GameObject> alive = new List<GameObject>();
 
-    private float elapsed;
+    public float elapsed;
     private int currentMaxAlive;
 
     private void Start()
@@ -77,7 +82,7 @@ public class EnemySpawner : MonoBehaviour
 
     private IEnumerator SpawnLoop()
     {
-        yield return new WaitForSeconds(firstSpawnDelay);
+        yield return new WaitForSeconds(firstSpawnDelay);  
 
         while (!player.IsDead)
         {
@@ -170,5 +175,17 @@ public class EnemySpawner : MonoBehaviour
         }
 
         return null;
+    }
+
+    // Called once by GameManager when midnight begins. Put the special behaviour here.
+    public void OnMidnight()
+    {
+        IsMidnight = true;
+        Debug.Log("Midnight started");
+
+        // ideat
+        // - Bossi tai jotai
+        // - hullusti lisää vihollisii
+        // - tosi vahvoja nappuloita
     }
 }
