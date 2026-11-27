@@ -3,7 +3,7 @@ using UnityEngine;
 public enum Stat
 {
     MaxHealth, DashDamage, AttackDamage, DashDistance,
-    DashChargeTime, DashCooldown, AttackSpeed, StepSpeed, Invincibility
+    DashChargeTime, DashCooldown, AttackSpeed, StepSpeed, Invincibility, HealHoldTime, HealAmount
 }
 
 [CreateAssetMenu(menuName = "Upgrades/Stat Upgrade")]

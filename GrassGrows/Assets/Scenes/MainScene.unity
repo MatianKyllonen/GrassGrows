@@ -2115,7 +2115,7 @@ MonoBehaviour:
     unlockTime: 40
   - prefab: {fileID: 5471314403311646601, guid: e4489676597e86f41b31e71e315f7983, type: 3}
     weight: 6
-    unlockTime: 140
+    unlockTime: 240
   - prefab: {fileID: 2774027085464110381, guid: 399f262e37a5d0a418fe78b99221454f, type: 3}
     weight: 9
     unlockTime: 60
@@ -2125,6 +2125,9 @@ MonoBehaviour:
   - prefab: {fileID: 5471314403311646601, guid: 36e5502755254d24395176d06522f428, type: 3}
     weight: 7
     unlockTime: 90
+  - prefab: {fileID: 5471314403311646601, guid: 93164a083c450c3499b29597a0a40893, type: 3}
+    weight: 7
+    unlockTime: 320
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
@@ -2134,8 +2137,9 @@ MonoBehaviour:
   rampTime: 720
   maxAlive: 3
   maxAliveIncrease: 1
-  maxAliveIncreaseInterval: 20
+  maxAliveIncreaseInterval: 30
   maxAliveCap: 25
+  elapsed: 0
 --- !u!1 &135983600
 GameObject:
   m_ObjectHideFlags: 0
@@ -23630,6 +23634,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   upgradePool:
+  - {fileID: 11400000, guid: 1a28e53be13434944a6b02a5c88b26b0, type: 2}
   - {fileID: 11400000, guid: a5a5e3205df9ee747ad7ab729255ac35, type: 2}
   - {fileID: 11400000, guid: d232c6f2cbcceb146ae201ca0af9a849, type: 2}
   - {fileID: 11400000, guid: 77cd14a376f43e74cbac5693ab566559, type: 2}
@@ -23644,6 +23649,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5a00cf1117b218d4a9d143df2c42bce2, type: 2}
   - {fileID: 11400000, guid: 09b8aee319518224fa6b63c9d044e4d4, type: 2}
   - {fileID: 11400000, guid: 1ce1976a54a5aa145b9252ebd3a07666, type: 2}
+  - {fileID: 11400000, guid: 5a46323283a27f148990dd8ede9200cf, type: 2}
+  - {fileID: 11400000, guid: b63add6cb345b0043bcb798228e5ca07, type: 2}
+  - {fileID: 11400000, guid: 5aec6864ca5f9a44fa3ba401a65560c0, type: 2}
+  - {fileID: 11400000, guid: 6e7a816887e0a3347b0568cbd9c8c74a, type: 2}
   selectionUI: {fileID: 2099007316}
   cardUIAnimator: {fileID: 1351643157}
   levelUpSFX: {fileID: 8300000, guid: 9d63e294b5a23c7449fd652f51658535, type: 3}

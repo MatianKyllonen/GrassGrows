@@ -32,12 +32,19 @@ public static class StatApplier
                 p.attackStartup = Mathf.Clamp(p.attackStartup * cut, 0.03f, 0.5f);
                 p.attackRecovery = Mathf.Clamp(p.attackRecovery * cut, 0.05f, 0.8f);
                 break;
+            case Stat.HealHoldTime:
+                p.healHoldTime = Mathf.Max(0.06f, p.healHoldTime * cut);
+                p.RefreshHealSpeed();
+                break;
+            case Stat.HealAmount:
+                p.healAmount += flat;
+                break;
         }
     }
 
     public static bool IsPercent(Stat s) =>
         s == Stat.DashChargeTime || s == Stat.DashCooldown ||
-        s == Stat.AttackSpeed || s == Stat.StepSpeed;
+        s == Stat.AttackSpeed || s == Stat.StepSpeed || s == Stat.HealHoldTime;
 
     // Worded so that + is always good: "Dash Charge Speed", not "Dash Charge Time"
     public static string Label(Stat s)
@@ -53,6 +60,8 @@ public static class StatApplier
             case Stat.DashCooldown: return "Dash Recovery Speed";
             case Stat.StepSpeed: return "Movement Speed";
             case Stat.AttackSpeed: return "Attack Speed";
+            case Stat.HealHoldTime: return "Heal Speed";
+            case Stat.HealAmount: return "Heal Amount";
             default: return s.ToString();
         }
     }

@@ -75,6 +75,7 @@ public class PlayerController : MonoBehaviour
     public float attackActive = 0.06f;
     public float attackRecovery = 0.25f;
     public GameObject attackEffectPrefab;
+    public event System.Action<Vector2Int> onAttackCellHit;
 
     [Header("Health")]
     public int maxHealth = 3;
@@ -248,6 +249,12 @@ public class PlayerController : MonoBehaviour
             root.SetFloat("HopSpeed", hopClipLength / stepTime);
     }
 
+    public void RefreshHealSpeed()
+    {
+        if (playerAnimator)
+            playerAnimator.SetFloat("HealSpeed", 1f / healHoldTime);
+    }
+
     public void RefreshChargeSpeed()
     {
         if (playerAnimator)
@@ -269,7 +276,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.G))
             Die();
-            
+
 
 
         if (Time.timeScale == 0f) return;
@@ -355,7 +362,12 @@ public class PlayerController : MonoBehaviour
         if (isHealing)
         {
             if (playerAnimator)
+            {
+
                 playerAnimator.SetBool("isHealing", true);
+            }
+
+
 
             // Clear buffered actions while healing.
             attackBufferLeft = 0f;
@@ -574,6 +586,8 @@ public class PlayerController : MonoBehaviour
         playerAnimator.SetTrigger("Attack");
 
         yield return new WaitForSeconds(attackStartup);
+
+        onAttackCellHit?.Invoke(target);
 
 
         var alreadyHit = new HashSet<Collider2D>();
